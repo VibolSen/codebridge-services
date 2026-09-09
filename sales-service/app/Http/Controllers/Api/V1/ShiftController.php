@@ -5,44 +5,49 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ShiftController extends Controller
 {
-    public function active(Request $request)
+    private function getShiftMetrics($shiftId, $openingFloat)
     {
-        $userId = $request->user()->id;
-
-        $shift = DB::table('shifts')
-            ->where('user_id', $userId)
-            ->where('status', 'open')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        if (!$shift) {
-            return response()->json([
-                'status' => 'success',
-                'data' => null,
-            ]);
-        }
-
-        $cashSales = DB::table('sales as s')
+        $cashSales = (float) DB::table('sales as s')
             ->join('payments as p', 's.id', '=', 'p.sale_id')
-            ->where('s.shift_id', $shift->id)
-            ->where('p.payment_method', 'cash')
-            ->where('p.status', 'paid')
+            ->where('s.shift_id', $shiftId)->where('p.tender_type', 'cash')->where('p.status', 'paid')
             ->sum('p.amount');
 
-        $cashIn = DB::table('cash_drawer_movements')
-            ->where('shift_id', $shift->id)
-            ->where('type', 'in')
-            ->sum('amount');
+        $khqrSales = (float) DB::table('sales as s')
+            ->join('payments as p', 's.id', '=', 'p.sale_id')
+            ->where('s.shift_id', $shiftId)->where('p.tender_type', 'khqr')->where('p.status', 'paid')
+            ->sum('p.amount');
 
-        $cashOut = DB::table('cash_drawer_movements')
-            ->where('shift_id', $shift->id)
-            ->where('type', 'out')
-            ->sum('amount');
+        $cardSales = (float) DB::table('sales as s')
+            ->join('payments as p', 's.id', '=', 'p.sale_id')
+            ->where('s.shift_id', $shiftId)->where('p.tender_type', 'card')->where('p.status', 'paid')
+            ->sum('p.amount');
 
-        $expectedCash = $shift->opening_float + $cashSales + $cashIn - $cashOut;
+        $cashIn = (float) DB::table('cash_drawer_movements')->where('shift_id', $shiftId)->where('type', 'in')->sum('amount');
+        $cashOut = (float) DB::table('cash_drawer_movements')->where('shift_id', $shiftId)->where('type', 'out')->sum('amount');
+        $expectedCash = (float) $openingFloat + $cashSales + $cashIn - $cashOut;
+
+        return compact('cashSales', 'khqrSales', 'cardSales', 'cashIn', 'cashOut', 'expectedCash');
+    }
+
+    public function active(Request $request)
+    {
+        $shift = DB::table('shifts as s')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
+            ->leftJoin('outlets as o', 's.outlet_id', '=', 'o.id')
+            ->where('s.user_id', $request->user()->id)
+            ->where('s.status', 'open')
+            ->select('s.*', 'u.name as cashier_name', 'o.name as outlet_name')
+            ->orderBy('s.id', 'desc')->first();
+
+        if (!$shift) {
+            return response()->json(['status' => 'success', 'data' => null]);
+        }
+
+        $m = $this->getShiftMetrics($shift->id, $shift->opening_float);
 
         return response()->json([
             'status' => 'success',
@@ -50,10 +55,12 @@ class ShiftController extends Controller
                 'shift' => $shift,
                 'summary' => [
                     'opening_float' => (float)$shift->opening_float,
-                    'cash_sales' => (float)$cashSales,
-                    'cash_in' => (float)$cashIn,
-                    'cash_out' => (float)$cashOut,
-                    'expected_cash' => (float)$expectedCash,
+                    'cash_sales' => $m['cashSales'],
+                    'khqr_sales' => $m['khqrSales'],
+                    'card_sales' => $m['cardSales'],
+                    'cash_in' => $m['cashIn'],
+                    'cash_out' => $m['cashOut'],
+                    'expected_cash' => $m['expectedCash'],
                 ],
             ],
         ]);
@@ -62,35 +69,23 @@ class ShiftController extends Controller
     public function open(Request $request)
     {
         $user = $request->user();
-
-        // Check if user already has an active shift
-        $existing = DB::table('shifts')
-            ->where('user_id', $user->id)
-            ->where('status', 'open')
-            ->first();
-
+        $existing = DB::table('shifts')->where('user_id', $user->id)->where('status', 'open')->first();
         if ($existing) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You already have an active open shift.',
-                'data' => $existing,
-            ], 422);
+            return response()->json(['status' => 'error', 'message' => 'Active open shift already exists.', 'data' => $existing], 422);
         }
 
         $validated = $request->validate([
             'opening_float' => 'required|numeric|min:0',
             'outlet_id' => 'nullable|string',
             'register_id' => 'nullable|string',
+            'note' => 'nullable|string',
         ]);
 
-        $outletId = $validated['outlet_id'] ?? $user->outlet_id ?? 1;
-        $registerId = $validated['register_id'] ?? 1;
-        $shiftId = (string) \Illuminate\Support\Str::uuid();
-
+        $shiftId = (string) Str::uuid();
         DB::table('shifts')->insert([
             'id' => $shiftId,
-            'outlet_id' => $outletId,
-            'register_id' => $registerId,
+            'outlet_id' => $validated['outlet_id'] ?? $user->outlet_id ?? 1,
+            'register_id' => $validated['register_id'] ?? 1,
             'user_id' => $user->id,
             'opened_at' => now(),
             'opening_float' => $validated['opening_float'],
@@ -100,16 +95,16 @@ class ShiftController extends Controller
             'updated_at' => now(),
         ]);
 
-        $shift = DB::table('shifts')->where('id', $shiftId)->first();
+        $shift = DB::table('shifts as s')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
+            ->leftJoin('outlets as o', 's.outlet_id', '=', 'o.id')
+            ->select('s.*', 'u.name as cashier_name', 'o.name as outlet_name')
+            ->where('s.id', $shiftId)->first();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Shift opened successfully.',
-            'data' => $shift,
-        ], 201);
+        return response()->json(['status' => 'success', 'message' => 'Shift opened successfully.', 'data' => $shift], 201);
     }
 
-    public function cashMovement(Request $request, $id)
+    public function cashMovement(Request $request, $id = null)
     {
         $validated = $request->validate([
             'type' => 'required|in:in,out',
@@ -117,13 +112,13 @@ class ShiftController extends Controller
             'reason' => 'required|string|max:255',
         ]);
 
-        $shift = DB::table('shifts')->where('id', $id)->first();
-        if (!$shift || $shift->status !== 'open') {
+        $query = DB::table('shifts')->where('status', 'open');
+        $shift = ($id ? $query->where('id', $id) : $query->where('user_id', $request->user()->id)->orderByDesc('id'))->first();
+        if (!$shift) {
             return response()->json(['status' => 'error', 'message' => 'Active open shift not found.'], 404);
         }
 
-        $movementId = (string) \Illuminate\Support\Str::uuid();
-
+        $movementId = (string) Str::uuid();
         DB::table('cash_drawer_movements')->insert([
             'id' => $movementId,
             'shift_id' => $shift->id,
@@ -135,46 +130,53 @@ class ShiftController extends Controller
             'updated_at' => now(),
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Cash drawer movement recorded.',
-            'data' => ['id' => $movementId],
-        ]);
+        return response()->json(['status' => 'success', 'message' => 'Cash drawer movement recorded.', 'data' => ['id' => $movementId]]);
     }
 
-    public function close(Request $request, $id)
+    public function close(Request $request, $id = null)
     {
         $validated = $request->validate([
             'counted_cash' => 'required|numeric|min:0',
             'closing_note' => 'nullable|string',
+            'note' => 'nullable|string',
         ]);
 
-        $shift = DB::table('shifts')->where('id', $id)->first();
-        if (!$shift || $shift->status !== 'open') {
+        $query = DB::table('shifts')->where('status', 'open');
+        $shift = ($id ? $query->where('id', $id) : $query->where('user_id', $request->user()->id)->orderByDesc('id'))->first();
+        if (!$shift) {
             return response()->json(['status' => 'error', 'message' => 'Active open shift not found.'], 404);
         }
 
-        $cashSales = DB::table('sales as s')
-            ->join('payments as p', 's.id', '=', 'p.sale_id')
-            ->where('s.shift_id', $shift->id)
-            ->where('p.payment_method', 'cash')
-            ->where('p.status', 'paid')
-            ->sum('p.amount');
+        $m = $this->getShiftMetrics($shift->id, $shift->opening_float);
+        $countedCash = (float) $validated['counted_cash'];
+        $cashVariance = $countedCash - $m['expectedCash'];
 
-        $cashIn = DB::table('cash_drawer_movements')->where('shift_id', $shift->id)->where('type', 'in')->sum('amount');
-        $cashOut = DB::table('cash_drawer_movements')->where('shift_id', $shift->id)->where('type', 'out')->sum('amount');
+        if (abs($cashVariance) > 5.00) {
+            $supervisorPin = $request->input('supervisor_pin');
+            $userRole = $request->user()->role ?? 'cashier';
+            if (!in_array($userRole, ['supervisor', 'outlet_manager', 'admin', 'super_admin'])) {
+                if (empty($supervisorPin)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Cash drawer variance exceeds threshold ($5.00). Supervisor PIN authorization required.',
+                        'cash_variance' => $cashVariance,
+                    ], 403);
+                }
+                $validPin = DB::table('users')->where('pin_code', $supervisorPin)->whereIn('role', ['supervisor', 'outlet_manager', 'admin', 'super_admin'])->exists();
+                if (!$validPin) {
+                    return response()->json(['status' => 'error', 'message' => 'Invalid Supervisor PIN code.'], 403);
+                }
+            }
+        }
 
-        $expectedCash = $shift->opening_float + $cashSales + $cashIn - $cashOut;
-        $countedCash = (float)$validated['counted_cash'];
-        $cashVariance = $countedCash - $expectedCash;
-
+        $closingNote = $validated['closing_note'] ?? $validated['note'] ?? null;
         DB::table('shifts')->where('id', $shift->id)->update([
             'closed_at' => now(),
-            'expected_cash' => $expectedCash,
+            'expected_cash' => $m['expectedCash'],
             'counted_cash' => $countedCash,
             'cash_variance' => $cashVariance,
             'status' => 'closed',
-            'closing_note' => $validated['closing_note'] ?? null,
+            'closing_note' => $closingNote,
             'updated_at' => now(),
         ]);
 
@@ -183,10 +185,67 @@ class ShiftController extends Controller
             'message' => 'Shift closed successfully.',
             'data' => [
                 'shift_id' => $shift->id,
-                'expected_cash' => $expectedCash,
+                'expected_cash' => $m['expectedCash'],
                 'counted_cash' => $countedCash,
                 'cash_variance' => $cashVariance,
             ],
         ]);
+    }
+
+    public function xReport(Request $request, $id = null)
+    {
+        $query = DB::table('shifts as s')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
+            ->leftJoin('outlets as o', 's.outlet_id', '=', 'o.id')
+            ->select('s.*', 'u.name as cashier_name', 'o.name as outlet_name');
+
+        if ($id && $id !== 'active') {
+            $query->where('s.id', $id);
+        } else {
+            $query->where('s.user_id', $request->user()->id)->where('s.status', 'open')->orderByDesc('s.id');
+        }
+        $shift = $query->first();
+
+        if (!$shift) {
+            return response()->json(['status' => 'error', 'message' => 'Shift not found.'], 404);
+        }
+
+        $m = $this->getShiftMetrics($shift->id, $shift->opening_float);
+        $grossSales = $m['cashSales'] + $m['khqrSales'] + $m['cardSales'];
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'type' => $shift->status === 'closed' ? 'Z-REPORT' : 'X-REPORT',
+                'report_code' => ($shift->status === 'closed' ? 'Z-' : 'X-') . substr($shift->id, 0, 8),
+                'shift' => $shift,
+                'cashier_name' => $shift->cashier_name ?? null,
+                'outlet_name' => $shift->outlet_name ?? null,
+                'opening_float' => (float) $shift->opening_float,
+                'cash_sales' => $m['cashSales'],
+                'khqr_sales' => $m['khqrSales'],
+                'card_sales' => $m['cardSales'],
+                'gross_sales' => $grossSales,
+                'pay_ins' => $m['cashIn'],
+                'pay_outs' => $m['cashOut'],
+                'expected_cash' => $m['expectedCash'],
+                'counted_cash' => $shift->counted_cash !== null ? (float) $shift->counted_cash : null,
+                'cash_variance' => $shift->cash_variance !== null ? (float) $shift->cash_variance : null,
+                'timestamp' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function history(Request $request)
+    {
+        $shifts = DB::table('shifts as s')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
+            ->leftJoin('outlets as o', 's.outlet_id', '=', 'o.id')
+            ->select('s.*', 'u.name as cashier_name', 'o.name as outlet_name')
+            ->orderBy('s.created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        return response()->json(['status' => 'success', 'data' => ['shifts' => $shifts]]);
     }
 }

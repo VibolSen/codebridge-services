@@ -117,20 +117,24 @@ class TenantController extends Controller
         ]);
 
         // Link authenticated user to new tenant workspace and grant admin role as organization owner
-        if ($request->user()) {
-            $currentRole = $request->user()->role;
+        $authUser = auth('sanctum')->user() ?? $request->user();
+        $updatedUser = null;
+        if ($authUser) {
+            $currentRole = $authUser->role;
             $newRole = in_array($currentRole, ['super_admin', 'admin', 'administrator']) ? $currentRole : 'admin';
-            DB::table('users')->where('id', $request->user()->id)->update([
+            DB::table('users')->where('id', $authUser->id)->update([
                 'tenant_id' => $id,
                 'outlet_id' => $outletId,
                 'role'      => $newRole,
                 'updated_at' => now(),
             ]);
+            $updatedUser = DB::table('users')->where('id', $authUser->id)->first();
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Tenant workspace registered successfully! Your 14-day trial has started.',
+            'user'    => $updatedUser,
             'data'    => array_merge(
                 (array) DB::table('tenants')->where('id', $id)->first(),
                 [

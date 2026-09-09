@@ -110,7 +110,7 @@ class DashboardController extends Controller
             ->select(
                 's.id',
                 's.receipt_number',
-                DB::raw("COALESCE(s.customer_name, u.name, 'Walk-in Customer') as customer"),
+                DB::raw("COALESCE(u.name, 'Walk-in Customer') as customer"),
                 's.grand_total',
                 's.status',
                 DB::raw("COALESCE(p.tender_type, 'cash') as tender_type"),
@@ -127,13 +127,13 @@ class DashboardController extends Controller
 
         // 4. Top Customers
         $topCustomers = DB::table('sales as s')
-            ->whereNotNull('s.customer_name')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
             ->select(
-                's.customer_name as name',
+                DB::raw("COALESCE(u.name, 'Walk-in Customer') as name"),
                 DB::raw('COUNT(*) as orders'),
                 DB::raw('SUM(s.grand_total) as spent')
             )
-            ->groupBy('s.customer_name')
+            ->groupBy('u.name')
             ->orderByDesc('spent')
             ->limit(5)
             ->get();
@@ -149,39 +149,69 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function charts()
+    public function charts(Request $request)
     {
-        // Monthly chart comparisons
-        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
+        $outletId = $request->query('outlet_id');
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $currentYear = now()->year;
+
         $salesPurchasesChart = [];
-        foreach ($months as $m) {
+        $salesStatics = [];
+
+        foreach ($months as $idx => $m) {
+            $monthNum = $idx + 1;
+            $monthSalesQuery = DB::table('sales')
+                ->where('status', 'completed')
+                ->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $monthNum);
+
+            if (!empty($outletId)) {
+                $monthSalesQuery->where('outlet_id', $outletId);
+            }
+
+            $monthSales = (float) $monthSalesQuery->sum('grand_total');
+
             $salesPurchasesChart[] = [
                 'month' => $m,
-                'purchases' => rand(15, 55),
-                'sales' => rand(20, 60),
+                'purchases' => 0.00,
+                'sales' => $monthSales,
+            ];
+
+            $salesStatics[] = [
+                'month' => $m,
+                'revenue' => $monthSales,
+                'expense' => 0.00,
             ];
         }
 
-        $salesStatics = [];
-        foreach ($months as $m) {
-            $salesStatics[] = [
-                'month' => $m,
-                'revenue' => rand(10, 30),
-                'expense' => rand(-25, -5),
+        // Top categories from real sale_lines join categories
+        $categoriesQuery = DB::table('sale_lines as sl')
+            ->join('products as p', 'sl.product_id', '=', 'p.id')
+            ->leftJoin('categories as c', 'p.category_id', '=', 'c.id')
+            ->select(
+                DB::raw("COALESCE(c.name, 'General') as name"),
+                DB::raw('SUM(sl.subtotal) as sales')
+            )
+            ->groupBy('c.name')
+            ->orderByDesc('sales')
+            ->limit(5)
+            ->get();
+
+        $totalCatSales = (float) $categoriesQuery->sum('sales');
+        $topCategories = $categoriesQuery->map(function ($cat) use ($totalCatSales) {
+            return [
+                'name' => $cat->name,
+                'percentage' => $totalCatSales > 0 ? round(((float)$cat->sales / $totalCatSales) * 100, 1) : 0,
+                'sales' => (float) $cat->sales,
             ];
-        }
+        });
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'sales_purchases' => $salesPurchasesChart,
                 'sales_statics' => $salesStatics,
-                'top_categories' => [
-                    ['name' => 'Electronics', 'percentage' => 50, 'sales' => 698],
-                    ['name' => 'Sports', 'percentage' => 26, 'sales' => 545],
-                    ['name' => 'Lifestyles', 'percentage' => 24, 'sales' => 456],
-                ]
+                'top_categories' => $topCategories,
             ]
         ]);
     }

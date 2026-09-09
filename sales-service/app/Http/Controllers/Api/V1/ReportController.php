@@ -141,8 +141,11 @@ class ReportController extends Controller
      */
     public function shifts(Request $request)
     {
-        $shifts = DB::table('shifts')
-            ->orderBy('created_at', 'desc')
+        $shifts = DB::table('shifts as s')
+            ->leftJoin('users as u', 's.user_id', '=', 'u.id')
+            ->leftJoin('outlets as o', 's.outlet_id', '=', 'o.id')
+            ->select('s.*', 'u.name as cashier_name', 'o.name as outlet_name')
+            ->orderBy('s.created_at', 'desc')
             ->limit(30)
             ->get();
 

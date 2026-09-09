@@ -21,8 +21,8 @@ class UserController extends Controller
         $query = DB::table('users as u')
             ->leftJoin('outlets as o', 'u.outlet_id', '=', 'o.id');
 
-        // Scope to tenant organization
-        if ($currentUser && !empty($currentUser->tenant_id)) {
+        // Scope to tenant organization: Non-super-admin users only see accounts belonging to their tenant/workspace
+        if ($currentUser && $currentUser->role !== 'super_admin' && !empty($currentUser->tenant_id)) {
             $query->where(function ($q) use ($currentUser) {
                 $q->where('u.tenant_id', $currentUser->tenant_id)
                   ->orWhereNull('u.tenant_id'); // Global administrative fallbacks
