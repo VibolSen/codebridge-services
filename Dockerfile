@@ -27,16 +27,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # 3. Create app directories
 WORKDIR /var/www
 
-# 4. Copy all 6 Laravel microservices
+# 4. Copy all 3 consolidated Laravel microservices
 COPY ./auth-service /var/www/auth-service
-COPY ./catalog-service /var/www/catalog-service
 COPY ./inventory-service /var/www/inventory-service
 COPY ./sales-service /var/www/sales-service
-COPY ./payment-service /var/www/payment-service
-COPY ./shift-service /var/www/shift-service
 
 # 5. Install Composer dependencies for each service
-RUN for dir in auth-service catalog-service inventory-service sales-service payment-service shift-service; do \
+RUN for dir in auth-service inventory-service sales-service; do \
       if [ -f "/var/www/$dir/composer.json" ]; then \
         echo "Installing dependencies for $dir..." && \
         cd /var/www/$dir && \

@@ -12,10 +12,10 @@ PORT_TO_LISTEN="${PORT:-80}"
 echo "🌐 Configuring Nginx to bind on port ${PORT_TO_LISTEN}..."
 sed -i "s/listen 80;/listen ${PORT_TO_LISTEN};/g" /etc/nginx/nginx.conf
 
-SERVICES=("auth-service" "catalog-service" "inventory-service" "sales-service" "payment-service" "shift-service")
-DB_NAMES=("auth_db" "catalog_db" "inventory_db" "sales_db" "payment_db" "shift_db")
+SERVICES=("auth-service" "inventory-service" "sales-service")
+DB_NAMES=("auth_db" "inventory_db" "sales_db")
 
-# 1. Fast Setup of Environment, Keys & Permissions for all 6 microservices
+# 1. Fast Setup of Environment, Keys & Permissions for the 3 consolidated microservices
 for i in "${!SERVICES[@]}"; do
     svc="${SERVICES[$i]}"
     db_name="${DB_NAMES[$i]}"
@@ -66,11 +66,8 @@ done
         echo "📦 [Async DB] Ensuring cloud databases exist on Aiven MySQL..."
         mysql --connect-timeout=5 -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "
             CREATE DATABASE IF NOT EXISTS auth_db;
-            CREATE DATABASE IF NOT EXISTS catalog_db;
             CREATE DATABASE IF NOT EXISTS inventory_db;
             CREATE DATABASE IF NOT EXISTS sales_db;
-            CREATE DATABASE IF NOT EXISTS payment_db;
-            CREATE DATABASE IF NOT EXISTS shift_db;
         " 2>/dev/null || true
 
         for i in "${!SERVICES[@]}"; do
@@ -90,5 +87,5 @@ done
 echo "Verifying Nginx configuration syntax..."
 nginx -t || true
 
-echo "Starting Supervisor (Nginx on port ${PORT_TO_LISTEN} + 6 Microservices)..."
+echo "Starting Supervisor (Nginx on port ${PORT_TO_LISTEN} + 3 Consolidated Microservices)..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
