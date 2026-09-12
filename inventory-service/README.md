@@ -51,5 +51,5 @@ The **Inventory Microservice** handles stock level tracking, append-only stock m
 
 Run database migrations inside Docker:
 ```bash
-docker exec pos-inventory-service php artisan migrate --force
+docker exec codebridge-inventory-service php artisan migrate --force
 ```

@@ -48,5 +48,5 @@ The **Sales Microservice** powers the core idempotent POS checkout engine, cart 
 
 Run database migrations inside Docker:
 ```bash
-docker exec pos-sales-service php artisan migrate --force
+docker exec codebridge-sales-service php artisan migrate --force
 ```

@@ -19,14 +19,14 @@ services:
     build:
       context: .
       dockerfile: ./docker/Dockerfile.php
-    container_name: pos-auth-service
+    container_name: codebridge-auth-service
     command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
     ports:
       - "8001:8000"
     volumes:
       - ./auth-service:/var/www/html
     environment:
-      - APP_NAME="POS Auth Service"
+      - APP_NAME="CodeBridge Auth Service"
       - APP_ENV=local
       - APP_DEBUG=true
       - PHP_CLI_SERVER_WORKERS=4
@@ -46,14 +46,14 @@ services:
     build:
       context: .
       dockerfile: ./docker/Dockerfile.php
-    container_name: pos-inventory-service
+    container_name: codebridge-inventory-service
     command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
     ports:
       - "8003:8000"
     volumes:
       - ./inventory-service:/var/www/html
     environment:
-      - APP_NAME="POS Inventory Service"
+      - APP_NAME="CodeBridge Inventory Service"
       - APP_ENV=local
       - APP_DEBUG=true
       - PHP_CLI_SERVER_WORKERS=4
@@ -73,14 +73,14 @@ services:
     build:
       context: .
       dockerfile: ./docker/Dockerfile.php
-    container_name: pos-sales-service
+    container_name: codebridge-sales-service
     command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
     ports:
       - "8006:8000"
     volumes:
       - ./sales-service:/var/www/html
     environment:
-      - APP_NAME="POS Sales Service"
+      - APP_NAME="CodeBridge Sales Service"
       - APP_ENV=local
       - APP_DEBUG=true
       - PHP_CLI_SERVER_WORKERS=4

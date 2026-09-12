@@ -49,5 +49,5 @@ The **Auth Microservice** is responsible for user identity management, Laravel S
 
 Run database migrations inside Docker:
 ```bash
-docker exec pos-auth-service php artisan migrate --force
+docker exec codebridge-auth-service php artisan migrate --force
 ```
