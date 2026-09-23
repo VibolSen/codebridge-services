@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         if (class_exists(Scramble::class)) {
-            Gate::define('viewApiDocs', fn () => true);
+            Gate::define('viewApiDocs', fn ($user = null) => true);
 
             Scramble::configure()
                 ->routes(fn ($route) => str_starts_with($route->uri(), 'api/'));
