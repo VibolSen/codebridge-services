@@ -46,6 +46,7 @@ RUN for dir in auth-service inventory-service sales-service; do \
 
 # 6. Configure Nginx and Supervisor
 COPY ./docker/cloud-nginx.conf /etc/nginx/nginx.conf
+COPY ./gateway/docs.html /usr/share/nginx/html/docs.html
 COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY ./docker/start-unified.sh /usr/local/bin/start-unified.sh
 RUN chmod +x /usr/local/bin/start-unified.sh

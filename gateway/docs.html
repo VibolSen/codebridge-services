@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeBridges - API Gateway Documentation</title>
+  <!-- Stoplight Elements (Same engine as Laravel Scramble) -->
+  <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      background: #0f172a;
+      overflow: hidden;
+    }
+    .gateway-nav {
+      height: 60px;
+      min-height: 60px;
+      background: #090d16;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #f8fafc;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .selector-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .selector-label {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .service-select {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .service-select:hover, .service-select:focus {
+      border-color: #3b82f6;
+      background: #243248;
+    }
+    .docs-container {
+      flex: 1;
+      height: calc(100vh - 60px);
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+    elements-api {
+      height: 100%;
+      width: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header class="gateway-nav">
+    <div class="brand">
+      <span>🌉 CodeBridges</span>
+      <span class="brand-badge">Gateway Portal</span>
+    </div>
+    <div class="selector-box">
+      <label class="selector-label" for="serviceSelect">Service Definition:</label>
+      <select id="serviceSelect" class="service-select" onchange="switchService(this.value)">
+        <option value="/docs/api.json">🔑 Auth & Identity Service</option>
+        <option value="/docs/inventory/api.json">📦 Inventory & Catalog Service</option>
+        <option value="/docs/sales/api.json">💰 Sales, Shifts & Payments Service</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="docs-container" id="docsWrapper">
+    <elements-api id="elementsDoc" apiDescriptionUrl="/docs/api.json" router="hash" layout="sidebar"></elements-api>
+  </main>
+
+  <script>
+    function switchService(specUrl) {
+      localStorage.setItem('codebridges_selected_doc_spec', specUrl);
+      const wrapper = document.getElementById('docsWrapper');
+      wrapper.innerHTML = '<elements-api id="elementsDoc" apiDescriptionUrl="' + specUrl + '" router="hash" layout="sidebar"></elements-api>';
+    }
+
+    // Restore last selected service if saved
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('codebridges_selected_doc_spec');
+      if (saved) {
+        const select = document.getElementById('serviceSelect');
+        if (select && Array.from(select.options).some(opt => opt.value === saved)) {
+          select.value = saved;
+          switchService(saved);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
