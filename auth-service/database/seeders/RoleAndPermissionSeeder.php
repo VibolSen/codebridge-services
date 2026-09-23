@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class RoleAndPermissionSeeder extends Seeder
 {
@@ -59,9 +58,7 @@ class RoleAndPermissionSeeder extends Seeder
                 if ($existing) {
                     $permissionIdsMap[$permName] = $existing->id;
                 } else {
-                    $id = (string) Str::uuid();
-                    DB::table('permissions')->insert([
-                        'id' => $id,
+                    $id = DB::table('permissions')->insertGetId([
                         'name' => $permName,
                         'group' => $group,
                         'description' => $description,
@@ -171,11 +168,9 @@ class RoleAndPermissionSeeder extends Seeder
 
         foreach ($rolesData as $roleInfo) {
             $existingRole = DB::table('roles')->where('slug', $roleInfo['slug'])->first();
-            $roleId = $existingRole ? $existingRole->id : (string) Str::uuid();
 
             if (!$existingRole) {
-                DB::table('roles')->insert([
-                    'id' => $roleId,
+                $roleId = DB::table('roles')->insertGetId([
                     'company_id' => null,
                     'name' => $roleInfo['name'],
                     'slug' => $roleInfo['slug'],
@@ -184,6 +179,8 @@ class RoleAndPermissionSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+            } else {
+                $roleId = $existingRole->id;
             }
 
             // Sync Role Permissions in pivot table

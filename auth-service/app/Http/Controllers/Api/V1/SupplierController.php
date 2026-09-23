@@ -66,10 +66,8 @@ class SupplierController extends Controller
         ]);
 
         $code = 'SUP-' . strtoupper(substr(uniqid(), -6));
-        $id = (string) Str::uuid();
 
-        DB::table('suppliers')->insert([
-            'id' => $id,
+        $id = DB::table('suppliers')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'code' => $code,

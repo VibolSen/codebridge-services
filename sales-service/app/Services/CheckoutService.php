@@ -112,12 +112,7 @@ class CheckoutService
             $seqStr = str_pad($todayCount + 1, 5, '0', STR_PAD_LEFT);
             $receiptNumber = "REC-{$outletCode}-" . date('Ymd') . "-{$seqStr}";
 
-            $saleId = (string) \Illuminate\Support\Str::uuid();
-
-            $cashierId = $cashier?->id ?? DB::table('users')->value('id') ?? $saleId;
-
-            DB::table('sales')->insert([
-                'id' => $saleId,
+            $saleId = DB::table('sales')->insertGetId([
                 'outlet_id' => $data['outlet_id'],
                 'register_id' => $data['register_id'],
                 'shift_id' => $data['shift_id'] ?? null,
@@ -137,12 +132,12 @@ class CheckoutService
 
             // 4. Attach Sale Lines & Append Inventory Ledger
             foreach ($saleLines as &$line) {
-                $line['id'] = (string) \Illuminate\Support\Str::uuid();
                 $line['sale_id'] = $saleId;
-                DB::table('sale_lines')->insert($line);
+                $lineId = DB::table('sale_lines')->insertGetId($line);
+                $line['id'] = $lineId;
 
-                $targetOutletId = (string) $data['outlet_id'];
-                $targetProductId = (string) $line['product_id'];
+                $targetOutletId = $data['outlet_id'];
+                $targetProductId = $line['product_id'];
 
                 // Deduct stock from balance if record exists
                 try {
@@ -163,14 +158,13 @@ class CheckoutService
                 // Record append-only movement
                 try {
                     DB::table('inventory_movements')->insert([
-                        'id' => (string) \Illuminate\Support\Str::uuid(),
                         'outlet_id' => $targetOutletId,
                         'product_id' => $targetProductId,
                         'variant_id' => $line['variant_id'],
                         'quantity_change' => -$line['quantity'],
                         'movement_type' => 'sale',
                         'reference_type' => 'Sale',
-                        'reference_id' => $saleId,
+                        'reference_id' => (string) $saleId,
                         'created_by' => $cashierId,
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -181,9 +175,7 @@ class CheckoutService
             }
 
             // 5. Record Payment
-            $paymentId = (string) \Illuminate\Support\Str::uuid();
             DB::table('payments')->insert([
-                'id' => $paymentId,
                 'sale_id' => $saleId,
                 'tender_type' => $data['tender_type'] ?? 'cash',
                 'amount' => $grandTotal,

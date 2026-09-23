@@ -61,9 +61,7 @@ class ProductController extends Controller
                     if ($cat) {
                         $categoryId = $cat->id;
                     } else {
-                        $categoryId = (string) Str::uuid();
-                        DB::table('categories')->insert([
-                            'id' => $categoryId,
+                        $categoryId = DB::table('categories')->insertGetId([
                             'tenant_id' => $tenantId,
                             'name' => $item['category_name'],
                             'slug' => Str::slug($item['category_name']) . '-' . rand(100, 999),
@@ -73,9 +71,7 @@ class ProductController extends Controller
                     }
                 }
 
-                $productId = (string) Str::uuid();
-                DB::table('products')->insert([
-                    'id' => $productId,
+                $productId = DB::table('products')->insertGetId([
                     'tenant_id' => $tenantId,
                     'category_id' => $categoryId,
                     'name' => $item['name'],
@@ -92,7 +88,6 @@ class ProductController extends Controller
 
                 $initialStock = $item['initial_stock'] ?? 0;
                 DB::table('inventory_balances')->insert([
-                    'id' => (string) Str::uuid(),
                     'tenant_id' => $tenantId,
                     'outlet_id' => 1,
                     'product_id' => $productId,
@@ -279,13 +274,10 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $productId = (string) Str::uuid();
-
         $outlet = DB::table('outlets')->first();
-        $outletId = $outlet ? $outlet->id : (string) Str::uuid();
+        $outletId = $outlet ? $outlet->id : 1;
 
-        DB::table('products')->insert([
-            'id' => $productId,
+        $productId = DB::table('products')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'sku' => $validated['sku'],
@@ -300,7 +292,6 @@ class ProductController extends Controller
 
         $initialStock = $validated['initial_stock'] ?? 100;
         DB::table('inventory_balances')->insert([
-            'id' => (string) Str::uuid(),
             'tenant_id' => $tenantId,
             'outlet_id' => $outletId,
             'product_id' => $productId,

@@ -13,19 +13,19 @@ return new class extends Migration
     {
         if (Schema::hasTable('products') && !Schema::hasColumn('products', 'tenant_id')) {
             Schema::table('products', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
 
         if (Schema::hasTable('categories') && !Schema::hasColumn('categories', 'tenant_id')) {
             Schema::table('categories', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
 
         if (Schema::hasTable('inventory_balances') && !Schema::hasColumn('inventory_balances', 'tenant_id')) {
             Schema::table('inventory_balances', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
     }

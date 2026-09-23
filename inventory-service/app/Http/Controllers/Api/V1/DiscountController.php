@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class DiscountController extends Controller
 {
@@ -24,9 +23,7 @@ class DiscountController extends Controller
             'applies_to' => 'nullable|string',
         ]);
 
-        $id = (string) Str::uuid();
-        DB::table('discounts')->insert([
-            'id' => $id,
+        $id = DB::table('discounts')->insertGetId([
             'name' => $validated['name'],
             'discount_pct' => $validated['discount_pct'],
             'applies_to' => $validated['applies_to'] ?? 'All Products',
@@ -47,7 +44,6 @@ class DiscountController extends Controller
         if (DB::table('discounts')->count() === 0) {
             DB::table('discounts')->insert([
                 [
-                    'id' => (string) Str::uuid(),
                     'name' => 'Happy Hour Special',
                     'discount_pct' => '15%',
                     'applies_to' => 'All Beverages',
@@ -56,7 +52,6 @@ class DiscountController extends Controller
                     'updated_at' => now(),
                 ],
                 [
-                    'id' => (string) Str::uuid(),
                     'name' => 'Bakery Morning Bundle',
                     'discount_pct' => '20%',
                     'applies_to' => 'Bakery Category',

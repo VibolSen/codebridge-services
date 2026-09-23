@@ -13,13 +13,13 @@ return new class extends Migration
     {
         if (Schema::hasTable('departments') && !Schema::hasColumn('departments', 'tenant_id')) {
             Schema::table('departments', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
 
         if (Schema::hasTable('employees') && !Schema::hasColumn('employees', 'tenant_id')) {
             Schema::table('employees', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
     }

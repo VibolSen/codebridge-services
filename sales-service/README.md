@@ -8,7 +8,7 @@ The **Sales Microservice** powers the core idempotent POS checkout engine, cart 
 
 - **Port**: `8006`
 - **Database**: `sales_db` (MySQL 8.0)
-- **Primary Key Standard**: `uuidv4` (`char(36)`)
+- **Primary Key Standard**: Auto-increment BigInt (`id`, `unsignedBigInteger`)
 - **API Gateway Prefix**: `/api/v1/sales`, `/api/v1/carts`, `/api/v1/admin/dashboard`
 
 ---

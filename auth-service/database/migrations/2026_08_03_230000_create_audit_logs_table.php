@@ -10,8 +10,8 @@ return new class extends Migration
     {
         if (!Schema::hasTable('audit_logs')) {
             Schema::create('audit_logs', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('user_id')->nullable();
+                $table->id();
+                $table->unsignedBigInteger('user_id')->nullable();
                 $table->string('user_name')->default('System');
                 $table->string('action'); // create_product, process_refund, open_shift, close_shift, stock_adjust, login
                 $table->string('module')->default('system'); // sales, inventory, shifts, auth, catalog

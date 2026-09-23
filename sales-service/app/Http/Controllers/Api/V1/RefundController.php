@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Exception;
 
 class RefundController extends Controller
@@ -132,9 +131,8 @@ class RefundController extends Controller
                 }
             }
 
-            $refundId = (string) Str::uuid();
             $totalRefundAmount = 0;
-            $refundLinesToInsert = [];
+            $refundLinesData = [];
             $totalItemsRequested = 0;
             $totalItemsPurchased = 0;
 
@@ -161,23 +159,46 @@ class RefundController extends Controller
                 $totalRefundAmount += $lineRefundSubtotal;
                 $totalItemsRequested += ($alreadyReturned + $requestedQty);
 
-                $refundLinesToInsert[] = [
-                    'id' => (string) Str::uuid(),
+                $refundLinesData[] = [
+                    'line' => $line,
+                    'requested_qty' => $requestedQty,
+                    'line_refund_subtotal' => $lineRefundSubtotal,
+                    'restock_decision' => $item['restock_decision'],
+                    'reason' => $item['reason'] ?? $validated['reason'],
+                ];
+            }
+
+            // Insert Refund Record Header
+            $payment = DB::table('payments')->where('sale_id', $sale->id)->first();
+            $refundId = DB::table('refunds')->insertGetId([
+                'sale_id' => $sale->id,
+                'payment_id' => $payment ? $payment->id : null,
+                'user_id' => $user->id,
+                'amount' => $totalRefundAmount,
+                'reason' => $validated['reason'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Insert Refund Lines & Update Stock
+            foreach ($refundLinesData as $rData) {
+                $line = $rData['line'];
+                $requestedQty = $rData['requested_qty'];
+
+                DB::table('refund_lines')->insert([
                     'refund_id' => $refundId,
                     'sale_line_id' => $line->id,
                     'product_id' => $line->product_id,
                     'quantity' => $requestedQty,
                     'unit_price' => $line->unit_price,
-                    'refund_subtotal' => $lineRefundSubtotal,
-                    'restock_decision' => $item['restock_decision'],
-                    'reason' => $item['reason'] ?? $validated['reason'],
+                    'refund_subtotal' => $rData['line_refund_subtotal'],
+                    'restock_decision' => $rData['restock_decision'],
+                    'reason' => $rData['reason'],
                     'created_at' => now(),
                     'updated_at' => now(),
-                ];
+                ]);
 
-                // Perform Restocking or Wastage Logging
-                if ($item['restock_decision'] === 'restock') {
-                    // Restock into inventory balances
+                if ($rData['restock_decision'] === 'restock') {
                     DB::table('inventory_balances')
                         ->where('outlet_id', $sale->outlet_id)
                         ->where('product_id', $line->product_id)
@@ -188,31 +209,27 @@ class RefundController extends Controller
                         ->where('product_id', $line->product_id)
                         ->increment('available', $requestedQty);
 
-                    // Append-only ledger entry
                     DB::table('inventory_movements')->insert([
-                        'id' => (string) Str::uuid(),
                         'outlet_id' => $sale->outlet_id,
                         'product_id' => $line->product_id,
                         'variant_id' => $line->variant_id ?? null,
                         'quantity_change' => $requestedQty,
                         'movement_type' => 'return',
                         'reference_type' => 'Refund',
-                        'reference_id' => $refundId,
+                        'reference_id' => (string) $refundId,
                         'created_by' => $user->id,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-                } elseif ($item['restock_decision'] === 'wastage') {
-                    // Log wastage
+                } elseif ($rData['restock_decision'] === 'wastage') {
                     DB::table('inventory_movements')->insert([
-                        'id' => (string) Str::uuid(),
                         'outlet_id' => $sale->outlet_id,
                         'product_id' => $line->product_id,
                         'variant_id' => $line->variant_id ?? null,
                         'quantity_change' => -$requestedQty,
                         'movement_type' => 'wastage',
                         'reference_type' => 'Refund',
-                        'reference_id' => $refundId,
+                        'reference_id' => (string) $refundId,
                         'created_by' => $user->id,
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -220,27 +237,8 @@ class RefundController extends Controller
                 }
             }
 
-            // Insert Refund Record Header
-            $payment = DB::table('payments')->where('sale_id', $sale->id)->first();
-            DB::table('refunds')->insert([
-                'id' => $refundId,
-                'sale_id' => $sale->id,
-                'payment_id' => $payment->id ?? (string) Str::uuid(),
-                'user_id' => $user->id,
-                'amount' => $totalRefundAmount,
-                'reason' => $validated['reason'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Insert Refund Lines
-            foreach ($refundLinesToInsert as $rLine) {
-                DB::table('refund_lines')->insert($rLine);
-            }
-
             // Record Refund Payment Tender Record
             DB::table('payments')->insert([
-                'id' => (string) Str::uuid(),
                 'sale_id' => $sale->id,
                 'tender_type' => $payment->tender_type ?? 'cash',
                 'amount' => -$totalRefundAmount,

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('expenses')) {
             Schema::create('expenses', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('expense_ref');
                 $table->string('category');
                 $table->string('description');
@@ -22,7 +22,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('incomes')) {
             Schema::create('incomes', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('income_ref');
                 $table->string('source');
                 $table->string('description');
@@ -34,7 +34,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('bank_accounts')) {
             Schema::create('bank_accounts', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('bank_name');
                 $table->string('account_name');
                 $table->string('account_number');

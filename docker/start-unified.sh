@@ -13,13 +13,12 @@ echo "🌐 Configuring Nginx to bind on port ${PORT_TO_LISTEN}..."
 sed -i "s/listen 80;/listen ${PORT_TO_LISTEN};/g" /etc/nginx/nginx.conf
 
 SERVICES=("auth-service" "inventory-service" "sales-service")
-DB_NAMES=("auth_db" "inventory_db" "sales_db")
+TARGET_DB="${DB_DATABASE:-codebridge}"
+TARGET_PORT="${DB_PORT:-4000}"
+SSL_CA_PATH="${MYSQL_ATTR_SSL_CA:-/etc/ssl/certs/ca-certificates.crt}"
 
 # 1. Fast Setup of Environment, Keys & Permissions for the 3 consolidated microservices
-for i in "${!SERVICES[@]}"; do
-    svc="${SERVICES[$i]}"
-    db_name="${DB_NAMES[$i]}"
-    
+for svc in "${SERVICES[@]}"; do
     if [ -d "/var/www/$svc" ]; then
         cd "/var/www/$svc"
         
@@ -27,7 +26,7 @@ for i in "${!SERVICES[@]}"; do
         mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
         chmod -R 777 storage bootstrap/cache 2>/dev/null || true
         
-        # 2. Write complete .env file with active Cloud Database credentials
+        # 2. Write complete .env file with active Cloud Database credentials (TiDB Cloud / MySQL)
         cat <<EOF > .env
 APP_NAME=POS-${svc}
 APP_ENV=production
@@ -37,10 +36,11 @@ APP_KEY=
 
 DB_CONNECTION=mysql
 DB_HOST=${DB_HOST:-127.0.0.1}
-DB_PORT=${DB_PORT:-3306}
-DB_DATABASE=${db_name}
+DB_PORT=${TARGET_PORT}
+DB_DATABASE=${TARGET_DB}
 DB_USERNAME=${DB_USERNAME:-root}
 DB_PASSWORD=${DB_PASSWORD:-}
+MYSQL_ATTR_SSL_CA=${SSL_CA_PATH}
 
 SESSION_DRIVER=file
 CACHE_STORE=file
@@ -63,24 +63,26 @@ done
 (
     sleep 2
     if [ -n "$DB_HOST" ] && [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ]; then
-        echo "📦 [Async DB] Ensuring cloud databases exist on Aiven MySQL..."
-        mysql --connect-timeout=5 -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "
-            CREATE DATABASE IF NOT EXISTS auth_db;
-            CREATE DATABASE IF NOT EXISTS inventory_db;
-            CREATE DATABASE IF NOT EXISTS sales_db;
+        echo "📦 [Async DB] Ensuring cloud database (${TARGET_DB}) exists on TiDB Cloud..."
+
+        SSL_CLI_FLAG=""
+        if [ -f "$SSL_CA_PATH" ]; then
+            SSL_CLI_FLAG="--ssl-ca=$SSL_CA_PATH"
+        fi
+
+        mysql --connect-timeout=10 -h "$DB_HOST" -P "$TARGET_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" $SSL_CLI_FLAG -e "
+            CREATE DATABASE IF NOT EXISTS \`${TARGET_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
         " 2>/dev/null || true
 
-        for i in "${!SERVICES[@]}"; do
-            svc="${SERVICES[$i]}"
-            db_name="${DB_NAMES[$i]}"
+        for svc in "${SERVICES[@]}"; do
             if [ -d "/var/www/$svc" ]; then
                 cd "/var/www/$svc"
-                echo "🚀 [Async DB] Running migrations for $svc ($db_name)..."
+                echo "🚀 [Async DB] Running migrations for $svc (${TARGET_DB})..."
                 php artisan migrate --force 2>/dev/null || true
                 php artisan db:seed --force 2>/dev/null || true
             fi
         done
-        echo "✅ [Async DB] All database migrations completed."
+        echo "✅ [Async DB] All database migrations completed on TiDB Cloud."
     fi
 ) &
 

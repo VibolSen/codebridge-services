@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('brands', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->string('slug')->unique();
             $table->string('logo')->nullable();
@@ -19,7 +19,7 @@ return new class extends Migration
         });
 
         Schema::table('products', function (Blueprint $table) {
-            $table->uuid('brand_id')->nullable()->after('category_id');
+            $table->unsignedBigInteger('brand_id')->nullable()->after('category_id');
         });
     }
 

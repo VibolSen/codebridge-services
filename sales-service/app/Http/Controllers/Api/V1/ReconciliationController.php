@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ReconciliationController extends Controller
 {
@@ -23,7 +22,6 @@ class ReconciliationController extends Controller
     public function run(Request $request)
     {
         $tenantId = $this->getTenantId($request);
-        $batchId = (string) Str::uuid();
         $batchCode = 'REC-BATCH-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
 
         // Audit recent payment attempts scoped by tenant
@@ -40,7 +38,7 @@ class ReconciliationController extends Controller
         $matchedCount = 0;
         $mismatchCount = 0;
         $totalDiscrepancy = 0;
-        $exceptionsToInsert = [];
+        $rawExceptions = [];
 
         foreach ($attempts as $attempt) {
             $isPaid = $attempt->status === 'paid';
@@ -56,10 +54,8 @@ class ReconciliationController extends Controller
 
                 $exceptionType = !$isPaid ? 'missing_at_provider' : 'amount_mismatch';
 
-                $exceptionsToInsert[] = [
-                    'id' => (string) Str::uuid(),
+                $rawExceptions[] = [
                     'tenant_id' => $tenantId,
-                    'reconciliation_id' => $batchId,
                     'payment_id' => $attempt->payment_id,
                     'merchant_reference' => $attempt->merchant_reference ?? ('PAY-' . strtoupper(substr(uniqid(), -6))),
                     'expected_amount' => $expectedAmount,
@@ -75,8 +71,7 @@ class ReconciliationController extends Controller
         }
 
         // Insert Reconciliation Batch Header
-        DB::table('reconciliations')->insert([
-            'id' => $batchId,
+        $batchId = DB::table('reconciliations')->insertGetId([
             'tenant_id' => $tenantId,
             'batch_code' => $batchCode,
             'reconciled_date' => now()->toDateString(),
@@ -90,7 +85,8 @@ class ReconciliationController extends Controller
         ]);
 
         // Insert Exceptions
-        foreach ($exceptionsToInsert as $ex) {
+        foreach ($rawExceptions as $ex) {
+            $ex['reconciliation_id'] = $batchId;
             DB::table('reconciliation_exceptions')->insert($ex);
         }
 

@@ -88,11 +88,9 @@ class EmployeeController extends Controller
             'salary' => 'nullable|numeric|min:0',
         ]);
 
-        $id = (string) Str::uuid();
         $code = 'EMP-' . strtoupper(substr(uniqid(), -4));
 
-        DB::table('employees')->insert([
-            'id' => $id,
+        $id = DB::table('employees')->insertGetId([
             'tenant_id' => $tenantId,
             'employee_code' => $code,
             'first_name' => $validated['first_name'],

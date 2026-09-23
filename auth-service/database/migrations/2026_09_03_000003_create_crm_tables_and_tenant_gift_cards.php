@@ -14,11 +14,11 @@ return new class extends Migration
         // 1. Deals Pipeline Table
         if (!Schema::hasTable('deals')) {
             Schema::create('deals', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->string('tenant_id', 36)->nullable()->index();
+                $table->id();
+                $table->unsignedBigInteger('tenant_id')->nullable()->index();
                 $table->string('title');
                 $table->string('company')->nullable();
-                $table->uuid('customer_id')->nullable();
+                $table->unsignedBigInteger('customer_id')->nullable();
                 $table->decimal('value', 12, 2)->default(0);
                 $table->string('stage', 50)->default('lead'); // lead, qualified, proposal, negotiation, won, lost
                 $table->integer('probability')->default(50);
@@ -31,8 +31,8 @@ return new class extends Migration
         // 2. Inbound Leads Table
         if (!Schema::hasTable('leads')) {
             Schema::create('leads', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->string('tenant_id', 36)->nullable()->index();
+                $table->id();
+                $table->unsignedBigInteger('tenant_id')->nullable()->index();
                 $table->string('name');
                 $table->string('company')->nullable();
                 $table->string('email')->nullable();
@@ -48,10 +48,10 @@ return new class extends Migration
         // 3. Customer Touchpoints & Activity Logs
         if (!Schema::hasTable('crm_activities')) {
             Schema::create('crm_activities', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->string('tenant_id', 36)->nullable()->index();
-                $table->uuid('deal_id')->nullable();
-                $table->uuid('customer_id')->nullable();
+                $table->id();
+                $table->unsignedBigInteger('tenant_id')->nullable()->index();
+                $table->unsignedBigInteger('deal_id')->nullable();
+                $table->unsignedBigInteger('customer_id')->nullable();
                 $table->string('type', 50)->default('call'); // call, email, meeting, note
                 $table->string('title');
                 $table->string('contact')->nullable();
@@ -63,7 +63,7 @@ return new class extends Migration
         // 4. Multi-Tenant Scoping for Gift Cards
         if (Schema::hasTable('gift_cards') && !Schema::hasColumn('gift_cards', 'tenant_id')) {
             Schema::table('gift_cards', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->index()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
             });
         }
     }

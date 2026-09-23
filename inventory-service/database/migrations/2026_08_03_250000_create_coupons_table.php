@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('coupons')) {
             Schema::create('coupons', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('code')->unique();
                 $table->string('discount_type')->default('percentage'); // percentage, fixed
                 $table->decimal('discount_value', 12, 2);

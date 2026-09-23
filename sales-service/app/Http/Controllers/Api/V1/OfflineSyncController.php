@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Exception;
 
 class OfflineSyncController extends Controller
@@ -15,53 +14,76 @@ class OfflineSyncController extends Controller
      */
     public function sync(Request $request)
     {
-        $user = $request->user();
         $validated = $request->validate([
             'transactions' => 'required|array|min:1',
             'transactions.*.offline_id' => 'required|string',
             'transactions.*.receipt_number' => 'required|string',
-            'transactions.*.items' => 'required|array|min:1',
-            'transactions.*.tenders' => 'required|array|min:1',
             'transactions.*.created_at' => 'nullable|string',
+            'transactions.*.items' => 'required|array|min:1',
+            'transactions.*.items.*.id' => 'required',
+            'transactions.*.items.*.name' => 'required|string',
+            'transactions.*.items.*.quantity' => 'required|numeric|min:1',
+            'transactions.*.items.*.price' => 'required|numeric|min:0',
+            'transactions.*.tenders' => 'required|array|min:1',
         ]);
 
-        $results = [];
+        $user = $request->user();
+        $userId = $user?->id ?? 1;
         $syncedCount = 0;
         $alreadySyncedCount = 0;
+        $results = [];
 
         foreach ($validated['transactions'] as $tx) {
             $offlineId = $tx['offline_id'];
 
-            // Idempotency check: has this offline_id already been processed?
-            $existingSale = DB::table('sales')->where('offline_id', $offlineId)->first();
-            if ($existingSale) {
+            // Idempotency Check
+            $existing = DB::table('sales')->where('offline_id', $offlineId)->first();
+            if ($existing) {
                 $alreadySyncedCount++;
                 $results[] = [
                     'offline_id' => $offlineId,
                     'status' => 'already_synced',
-                    'sale_id' => $existingSale->id,
-                    'receipt_number' => $existingSale->receipt_number,
+                    'sale_id' => $existing->id,
                 ];
                 continue;
             }
 
             // Process new offline transaction
-            DB::transaction(function () use ($tx, $user, $offlineId, &$syncedCount, &$results) {
-                $saleId = (string) Str::uuid();
-                $outletId = $user->outlet_id ?? 'outlet-01';
-                $registerId = $user->register_id ?? 'register-01';
+            DB::transaction(function () use ($tx, $user, $userId, $offlineId, &$syncedCount, &$results) {
+                $outletId = $user?->outlet_id ?? 1;
+                $registerId = $user?->register_id ?? 1;
 
                 $subtotal = 0;
-                $linesToInsert = [];
+                foreach ($tx['items'] as $item) {
+                    $qty = (float) $item['quantity'];
+                    $unitPrice = (float) $item['price'];
+                    $subtotal += ($qty * $unitPrice);
+                }
+
+                $taxAmount = round($subtotal * 0.10, 2);
+                $grandTotal = $subtotal + $taxAmount;
+
+                // Insert Sale Record
+                $saleId = DB::table('sales')->insertGetId([
+                    'offline_id' => $offlineId,
+                    'receipt_number' => $tx['receipt_number'],
+                    'outlet_id' => $outletId,
+                    'register_id' => $registerId,
+                    'user_id' => $userId,
+                    'subtotal' => $subtotal,
+                    'tax_total' => $taxAmount,
+                    'grand_total' => $grandTotal,
+                    'status' => 'completed',
+                    'created_at' => $tx['created_at'] ?? now(),
+                    'updated_at' => now(),
+                ]);
 
                 foreach ($tx['items'] as $item) {
                     $qty = (float) $item['quantity'];
                     $unitPrice = (float) $item['price'];
                     $lineSubtotal = $qty * $unitPrice;
-                    $subtotal += $lineSubtotal;
 
-                    $linesToInsert[] = [
-                        'id' => (string) Str::uuid(),
+                    DB::table('sale_lines')->insert([
                         'sale_id' => $saleId,
                         'product_id' => $item['id'],
                         'product_name' => $item['name'],
@@ -70,7 +92,7 @@ class OfflineSyncController extends Controller
                         'subtotal' => $lineSubtotal,
                         'created_at' => $tx['created_at'] ?? now(),
                         'updated_at' => now(),
-                    ];
+                    ]);
 
                     // Decrement Inventory Balances
                     DB::table('inventory_balances')
@@ -80,46 +102,21 @@ class OfflineSyncController extends Controller
 
                     // Append Inventory Movement Ledger
                     DB::table('inventory_movements')->insert([
-                        'id' => (string) Str::uuid(),
                         'outlet_id' => $outletId,
                         'product_id' => $item['id'],
                         'quantity_change' => -$qty,
                         'movement_type' => 'sale',
                         'reference_type' => 'Sale',
-                        'reference_id' => $saleId,
-                        'created_by' => $user->id,
+                        'reference_id' => (string) $saleId,
+                        'created_by' => $userId,
                         'created_at' => $tx['created_at'] ?? now(),
                         'updated_at' => now(),
                     ]);
                 }
 
-                $taxAmount = round($subtotal * 0.10, 2);
-                $grandTotal = $subtotal + $taxAmount;
-
-                // Insert Sale Record
-                DB::table('sales')->insert([
-                    'id' => $saleId,
-                    'offline_id' => $offlineId,
-                    'receipt_number' => $tx['receipt_number'],
-                    'outlet_id' => $outletId,
-                    'register_id' => $registerId,
-                    'user_id' => $user->id,
-                    'subtotal' => $subtotal,
-                    'tax_total' => $taxAmount,
-                    'grand_total' => $grandTotal,
-                    'status' => 'completed',
-                    'created_at' => $tx['created_at'] ?? now(),
-                    'updated_at' => now(),
-                ]);
-
-                foreach ($linesToInsert as $l) {
-                    DB::table('sale_lines')->insert($l);
-                }
-
                 // Insert Payment Tenders
                 foreach ($tx['tenders'] as $t) {
                     DB::table('payments')->insert([
-                        'id' => (string) Str::uuid(),
                         'sale_id' => $saleId,
                         'tender_type' => $t['tender_type'] ?? 'cash',
                         'amount' => (float) ($t['amount'] ?? $grandTotal),

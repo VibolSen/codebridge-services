@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class AuditLogController extends Controller
 {
@@ -36,7 +35,6 @@ class AuditLogController extends Controller
     public static function log($userId, string $userName, string $action, string $module = 'system', ?string $ipAddress = null, $payload = null)
     {
         DB::table('audit_logs')->insert([
-            'id' => (string) Str::uuid(),
             'user_id' => $userId,
             'user_name' => $userName,
             'action' => $action,

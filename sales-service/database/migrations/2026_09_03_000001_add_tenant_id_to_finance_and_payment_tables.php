@@ -24,7 +24,7 @@ return new class extends Migration
         foreach ($tables as $table) {
             if (Schema::hasTable($table) && !Schema::hasColumn($table, 'tenant_id')) {
                 Schema::table($table, function (Blueprint $tableBlueprint) {
-                    $tableBlueprint->string('tenant_id', 36)->nullable()->index()->after('id');
+                    $tableBlueprint->unsignedBigInteger('tenant_id')->nullable()->index()->after('id');
                 });
             }
         }

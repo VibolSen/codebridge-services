@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ShiftController extends Controller
 {
@@ -76,14 +75,12 @@ class ShiftController extends Controller
 
         $validated = $request->validate([
             'opening_float' => 'required|numeric|min:0',
-            'outlet_id' => 'nullable|string',
-            'register_id' => 'nullable|string',
+            'outlet_id' => 'nullable',
+            'register_id' => 'nullable',
             'note' => 'nullable|string',
         ]);
 
-        $shiftId = (string) Str::uuid();
-        DB::table('shifts')->insert([
-            'id' => $shiftId,
+        $shiftId = DB::table('shifts')->insertGetId([
             'outlet_id' => $validated['outlet_id'] ?? $user->outlet_id ?? 1,
             'register_id' => $validated['register_id'] ?? 1,
             'user_id' => $user->id,
@@ -118,9 +115,7 @@ class ShiftController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Active open shift not found.'], 404);
         }
 
-        $movementId = (string) Str::uuid();
-        DB::table('cash_drawer_movements')->insert([
-            'id' => $movementId,
+        $movementId = DB::table('cash_drawer_movements')->insertGetId([
             'shift_id' => $shift->id,
             'user_id' => $request->user()->id,
             'type' => $validated['type'],

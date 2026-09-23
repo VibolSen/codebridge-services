@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TableController extends Controller
 {
@@ -60,7 +59,6 @@ class TableController extends Controller
 
             foreach ($defaultTables as $t) {
                 DB::table('restaurant_tables')->insert([
-                    'id' => (string) Str::uuid(),
                     'name' => $t['name'],
                     'zone' => $t['zone'],
                     'capacity' => $t['capacity'],

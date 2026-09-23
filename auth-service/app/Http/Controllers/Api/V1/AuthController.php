@@ -52,7 +52,6 @@ class AuthController extends Controller
                     ]);
                     // Log audit event
                     DB::table('audit_logs')->insert([
-                        'id' => (string) Str::uuid(),
                         'user_id' => $user->id,
                         'action' => 'auth.brute_force_lockout',
                         'module' => 'Authentication',
@@ -335,21 +334,32 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Create the user
-        $userId = (string) Str::uuid();
-
-        $user = User::create([
-            'id' => $userId,
-            'tenant_id' => $invitation->tenant_id,
-            'outlet_id' => $invitation->outlet_id,
-            'name' => $validated['name'],
-            'email' => $invitation->email,
-            'phone' => $validated['phone'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'pin_code' => $validated['pin_code'] ?? '1234',
-            'role' => $invitation->role,
-            'is_active' => true,
-        ]);
+        // Attach or create the user
+        $existingUser = DB::table('users')->where('email', $invitation->email)->first();
+        if ($existingUser) {
+            DB::table('users')->where('id', $existingUser->id)->update([
+                'tenant_id' => $invitation->tenant_id,
+                'outlet_id' => $invitation->outlet_id,
+                'name' => $validated['name'] ?? $existingUser->name,
+                'role' => $invitation->role,
+                'pin_code' => $validated['pin_code'] ?? $existingUser->pin_code ?? '1234',
+                'is_active' => true,
+                'updated_at' => now(),
+            ]);
+            $user = User::find($existingUser->id);
+        } else {
+            $user = User::create([
+                'tenant_id' => $invitation->tenant_id,
+                'outlet_id' => $invitation->outlet_id,
+                'name' => $validated['name'],
+                'email' => $invitation->email,
+                'phone' => $validated['phone'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'pin_code' => $validated['pin_code'] ?? '1234',
+                'role' => $invitation->role,
+                'is_active' => true,
+            ]);
+        }
 
         // Mark invitation as accepted
         DB::table('user_invitations')->where('id', $invitation->id)->update([
@@ -428,7 +438,6 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'id' => (string) Str::uuid(),
             'name' => $request->name,
             'email' => $email,
             'password' => Hash::make($request->password),

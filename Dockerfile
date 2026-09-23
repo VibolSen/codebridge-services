@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     supervisor \
     bash \
     curl \
+    ca-certificates \
     git \
     libpng-dev \
     libzip-dev \

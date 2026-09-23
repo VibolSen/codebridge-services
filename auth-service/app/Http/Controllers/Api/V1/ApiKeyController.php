@@ -63,7 +63,6 @@ class ApiKeyController extends Controller
         ]);
 
         $user = $request->user();
-        $id = (string) Str::uuid();
 
         // Generate full secret key (e.g. cb_live_a1b2c3d4e5...)
         $randomSecret = Str::random(36);
@@ -77,8 +76,7 @@ class ApiKeyController extends Controller
 
         $permissions = $validated['permissions'] ?? ['*'];
 
-        DB::table('api_keys')->insert([
-            'id' => $id,
+        $id = DB::table('api_keys')->insertGetId([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
             'name' => $validated['name'],

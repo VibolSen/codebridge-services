@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\BakongService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -18,14 +17,14 @@ class PaymentController extends Controller
     }
 
     /**
-     * Generate Bakong KHQR Payload & Payment Attempt
+     * Generate KHQR for Dynamic Cashier Display or Customer-facing Tablet
      */
     public function generateKhqr(Request $request)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'currency' => 'nullable|string|in:USD,KHR',
-            'sale_id' => 'nullable|string',
+            'sale_id' => 'nullable',
             'bill_number' => 'nullable|string',
         ]);
 
@@ -35,13 +34,15 @@ class PaymentController extends Controller
 
         $payload = $this->bakongService->generateKhqrPayload($amount, $currency, $billNumber);
 
-        $paymentId = (string) Str::uuid();
-        $attemptId = (string) Str::uuid();
+        $saleId = $validated['sale_id'] ?? null;
+        if (!$saleId) {
+            $latestSale = DB::table('sales')->orderByDesc('id')->first();
+            $saleId = $latestSale ? $latestSale->id : 1;
+        }
 
         // Record Header Payment
-        DB::table('payments')->insert([
-            'id' => $paymentId,
-            'sale_id' => $validated['sale_id'] ?? (string) Str::uuid(),
+        $paymentId = DB::table('payments')->insertGetId([
+            'sale_id' => $saleId,
             'tender_type' => 'khqr',
             'amount' => $amount,
             'currency' => $currency,
@@ -52,8 +53,7 @@ class PaymentController extends Controller
         ]);
 
         // Record Payment Attempt
-        DB::table('payment_attempts')->insert([
-            'id' => $attemptId,
+        $attemptId = DB::table('payment_attempts')->insertGetId([
             'payment_id' => $paymentId,
             'merchant_reference' => $billNumber,
             'provider_transaction_id' => $payload['md5'],

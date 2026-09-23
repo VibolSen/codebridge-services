@@ -49,7 +49,6 @@ class RoleController extends Controller
         ]);
 
         $slug = \Illuminate\Support\Str::slug($request->name, '_');
-        $id = (string) \Illuminate\Support\Str::uuid();
 
         // Ensure unique slug
         $existing = DB::table('roles')->where('slug', $slug)->first();
@@ -57,8 +56,7 @@ class RoleController extends Controller
             $slug .= '_' . substr(md5(microtime()), 0, 4);
         }
 
-        DB::table('roles')->insert([
-            'id' => $id,
+        $id = DB::table('roles')->insertGetId([
             'company_id' => $request->company_id ?? null,
             'name' => $request->name,
             'slug' => $slug,

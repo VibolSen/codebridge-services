@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('purchases')) {
             Schema::create('purchases', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('purchase_ref')->unique();
                 $table->string('supplier');
                 $table->string('invoice_no');
@@ -23,7 +23,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('purchase_orders')) {
             Schema::create('purchase_orders', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('po_number')->unique();
                 $table->string('supplier');
                 $table->integer('items_count')->default(1);

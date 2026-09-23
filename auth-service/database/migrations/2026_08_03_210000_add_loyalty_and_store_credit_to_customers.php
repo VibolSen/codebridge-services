@@ -21,8 +21,8 @@ return new class extends Migration
 
         if (!Schema::hasTable('customer_credit_ledgers')) {
             Schema::create('customer_credit_ledgers', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('customer_id');
+                $table->id();
+                $table->unsignedBigInteger('customer_id');
                 $table->decimal('amount_change', 12, 2);
                 $table->string('entry_type'); // deposit, refund_credit, checkout_use, points_conversion, adjustment
                 $table->string('reference_id')->nullable();

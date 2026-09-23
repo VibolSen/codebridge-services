@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('departments', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->string('code')->unique();
             $table->text('description')->nullable();
@@ -17,14 +17,14 @@ return new class extends Migration
         });
 
         Schema::create('employees', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('employee_code')->unique();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->uuid('department_id')->nullable();
-            $table->uuid('outlet_id')->nullable();
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->unsignedBigInteger('outlet_id')->nullable();
             $table->string('designation')->default('Staff');
             $table->string('employment_type')->default('Full-time');
             $table->date('hire_date')->nullable();

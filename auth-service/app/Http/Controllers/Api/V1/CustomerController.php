@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
@@ -56,10 +55,8 @@ class CustomerController extends Controller
         ]);
 
         $code = 'CUST-' . strtoupper(substr(uniqid(), -6));
-        $id = (string) Str::uuid();
 
-        DB::table('customers')->insert([
-            'id' => $id,
+        $id = DB::table('customers')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'code' => $code,

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('outlets') && !Schema::hasColumn('outlets', 'tenant_id')) {
             Schema::table('outlets', function (Blueprint $table) {
-                $table->uuid('tenant_id')->nullable()->after('id')->index();
+                $table->unsignedBigInteger('tenant_id')->nullable()->after('id')->index();
             });
         }
     }

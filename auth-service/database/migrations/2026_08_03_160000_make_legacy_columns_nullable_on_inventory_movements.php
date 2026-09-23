@@ -16,7 +16,7 @@ return new class extends Migration
                 $table->decimal('quantity_change', 12, 4)->nullable()->change();
             }
             if (Schema::hasColumn('inventory_movements', 'created_by')) {
-                $table->uuid('created_by')->nullable()->change();
+                $table->unsignedBigInteger('created_by')->nullable()->change();
             }
         });
     }

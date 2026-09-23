@@ -8,7 +8,7 @@ services:
     dockerfilePath: ./gateway/Dockerfile
     dockerContext: .
     plan: free
-    region: frankfurt # Or oregon (match your Aiven MySQL region)
+    region: frankfurt # Or oregon / singapore (match your TiDB Cloud region)
     envVars:
       - key: PORT
         value: 80
@@ -36,15 +36,17 @@ services:
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
-        sync: false # Set to your Aiven Host in Render Dashboard
+        sync: false # Set to your TiDB Cloud Host in Render Dashboard (e.g. gateway01.<region>.prod.aws.tidbcloud.com)
       - key: DB_PORT
-        sync: false # Set to your Aiven Port (e.g. 24582)
+        value: "4000" # TiDB Cloud default port
       - key: DB_DATABASE
-        value: auth_db
+        value: codebridge
       - key: DB_USERNAME
-        sync: false # Set to your Aiven User (avnadmin)
+        sync: false # Set to your TiDB Cloud User (e.g. <prefix>.root)
       - key: DB_PASSWORD
-        sync: false # Set to your Aiven Password
+        sync: false # Set to your TiDB Cloud Password
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
 
   # ============================================================================
   # 3. Inventory & Catalog Service (Private Service)
@@ -69,13 +71,15 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        sync: false
+        value: "4000"
       - key: DB_DATABASE
-        value: inventory_db
+        value: codebridge
       - key: DB_USERNAME
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
 
   # ============================================================================
   # 4. Sales, Shift & Payment Engine (Private Service)
@@ -100,10 +104,12 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        sync: false
+        value: "4000"
       - key: DB_DATABASE
-        value: sales_db
+        value: codebridge
       - key: DB_USERNAME
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt

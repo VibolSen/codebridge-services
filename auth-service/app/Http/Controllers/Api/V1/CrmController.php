@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CrmController extends Controller
 {
@@ -66,10 +65,7 @@ class CrmController extends Controller
             'expected_close_date' => 'nullable|date',
         ]);
 
-        $id = (string) Str::uuid();
-
-        DB::table('deals')->insert([
-            'id' => $id,
+        $id = DB::table('deals')->insertGetId([
             'tenant_id' => $tenantId,
             'title' => $validated['title'],
             'company' => $validated['company'] ?? null,
@@ -182,10 +178,7 @@ class CrmController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $id = (string) Str::uuid();
-
-        DB::table('leads')->insert([
-            'id' => $id,
+        $id = DB::table('leads')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'company' => $validated['company'] ?? null,
@@ -239,10 +232,7 @@ class CrmController extends Controller
             'summary' => 'required|string',
         ]);
 
-        $id = (string) Str::uuid();
-
-        DB::table('crm_activities')->insert([
-            'id' => $id,
+        $id = DB::table('crm_activities')->insertGetId([
             'tenant_id' => $tenantId,
             'type' => $validated['type'],
             'title' => $validated['title'],

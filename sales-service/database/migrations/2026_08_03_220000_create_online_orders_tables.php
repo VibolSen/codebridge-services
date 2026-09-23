@@ -10,9 +10,9 @@ return new class extends Migration
     {
         if (!Schema::hasTable('online_orders')) {
             Schema::create('online_orders', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('order_number')->unique();
-                $table->uuid('customer_id')->nullable();
+                $table->unsignedBigInteger('customer_id')->nullable();
                 $table->string('customer_name');
                 $table->string('customer_phone');
                 $table->string('delivery_type')->default('pickup'); // pickup, delivery
@@ -31,9 +31,9 @@ return new class extends Migration
 
         if (!Schema::hasTable('online_order_lines')) {
             Schema::create('online_order_lines', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('online_order_id');
-                $table->uuid('product_id');
+                $table->id();
+                $table->unsignedBigInteger('online_order_id');
+                $table->unsignedBigInteger('product_id');
                 $table->string('product_name');
                 $table->decimal('quantity', 12, 4);
                 $table->decimal('unit_price', 12, 2);

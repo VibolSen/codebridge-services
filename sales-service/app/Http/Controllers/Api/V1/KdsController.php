@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class KdsController extends Controller
 {
@@ -54,7 +53,6 @@ class KdsController extends Controller
         if (DB::table('kds_tickets')->count() === 0) {
             DB::table('kds_tickets')->insert([
                 [
-                    'id' => (string) Str::uuid(),
                     'ticket_number' => 'KDS-0881',
                     'order_type' => 'dine_in',
                     'table_name' => 'Table #03',
@@ -68,7 +66,6 @@ class KdsController extends Controller
                     'updated_at' => now(),
                 ],
                 [
-                    'id' => (string) Str::uuid(),
                     'ticket_number' => 'KDS-0882',
                     'order_type' => 'takeaway',
                     'table_name' => 'Takeaway #12',

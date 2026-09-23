@@ -43,10 +43,7 @@ class TenantController extends Controller
             default           => ['max_outlets' => 1,  'max_registers' => 2,   'max_users' => 5],
         };
 
-        $id = (string) Str::uuid();
-
-        DB::table('tenants')->insert([
-            'id'            => $id,
+        $id = DB::table('tenants')->insertGetId([
             'name'          => $request->name,
             'slug'          => $slug,
             'company_code'  => 'CB-' . strtoupper(Str::random(6)),
@@ -75,7 +72,6 @@ class TenantController extends Controller
         $planInfo = $planMap[$clientTier];
 
         DB::table('tenant_subscriptions')->insert([
-            'id'            => (string) Str::uuid(),
             'tenant_id'     => $id,
             'plan_name'     => $planInfo['plan'],
             'billing_cycle' => 'monthly',
@@ -90,10 +86,8 @@ class TenantController extends Controller
         ]);
 
         // 3. Automatically provision Default Primary Store Outlet & Register for this tenant
-        $outletId = (string) Str::uuid();
         $outletCode = 'STR-' . strtoupper(Str::random(4));
-        DB::table('outlets')->insert([
-            'id'             => $outletId,
+        $outletId = DB::table('outlets')->insertGetId([
             'tenant_id'      => $id,
             'name'           => $request->name . ' - Main Store',
             'code'           => $outletCode,
@@ -107,7 +101,6 @@ class TenantController extends Controller
         ]);
 
         DB::table('registers')->insert([
-            'id'         => (string) Str::uuid(),
             'outlet_id'  => $outletId,
             'name'       => 'Register #1 (Main)',
             'code'       => 'REG-01',
@@ -346,7 +339,6 @@ class TenantController extends Controller
                     ]);
                 } else {
                     DB::table('users')->insert([
-                        'id'         => (string) Str::uuid(),
                         'tenant_id'  => $id,
                         'name'       => $request->owner_name ?? 'Store Owner',
                         'email'      => $request->owner_email,
@@ -409,7 +401,6 @@ class TenantController extends Controller
         ]);
 
         DB::table('tenant_subscriptions')->insert([
-            'id'            => (string) Str::uuid(),
             'tenant_id'     => $id,
             'plan_name'     => $request->plan_name,
             'billing_cycle' => $request->billing_cycle,
@@ -636,6 +627,18 @@ class TenantController extends Controller
         ];
 
         $plans = [
+            [
+                'id' => 'modular',
+                'tier_code' => 'modular_single',
+                'name' => 'A-La-Carte Single Module',
+                'priceMonthly' => 19,
+                'priceAnnual' => 190,
+                'maxOutlets' => 1,
+                'maxRegisters' => 2,
+                'maxStaff' => 10,
+                'modulesIncluded' => ['Select Any 1 Independent Module (POS, Inventory, HRM, CRM, or Finance)'],
+                'activeTenantsCount' => 0,
+            ],
             [
                 'id' => 'starter',
                 'tier_code' => 'free_personal',

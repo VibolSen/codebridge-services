@@ -4,19 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TenantSeeder extends Seeder
 {
     public function run(): void
     {
         // Seed the default "Platform Owner" tenant for CodeBridges internal use
-        $platformTenantId = (string) Str::uuid();
-
         $existing = DB::table('tenants')->where('slug', 'codebridge-platform')->first();
         if (!$existing) {
-            DB::table('tenants')->insert([
-                'id'            => $platformTenantId,
+            $platformTenantId = DB::table('tenants')->insertGetId([
                 'name'          => 'CodeBridges Platform',
                 'slug'          => 'codebridge-platform',
                 'company_code'  => 'CB-0001',
@@ -36,7 +32,6 @@ class TenantSeeder extends Seeder
             ]);
 
             DB::table('tenant_subscriptions')->insert([
-                'id'            => (string) Str::uuid(),
                 'tenant_id'     => $platformTenantId,
                 'plan_name'     => 'Enterprise Ultimate',
                 'billing_cycle' => 'yearly',
@@ -57,11 +52,9 @@ class TenantSeeder extends Seeder
         DB::table('users')->where('role', 'super_admin')->update(['tenant_id' => $platformTenantId]);
 
         // Seed a demo Business Runner tenant
-        $bizTenantId = (string) Str::uuid();
         $existingBiz = DB::table('tenants')->where('slug', 'sunny-cafe-pp')->first();
         if (!$existingBiz) {
-            DB::table('tenants')->insert([
-                'id'            => $bizTenantId,
+            $bizTenantId = DB::table('tenants')->insertGetId([
                 'name'          => 'Sunny Cafe Phnom Penh',
                 'slug'          => 'sunny-cafe-pp',
                 'company_code'  => 'CB-0002',
@@ -81,7 +74,6 @@ class TenantSeeder extends Seeder
             ]);
 
             DB::table('tenant_subscriptions')->insert([
-                'id'            => (string) Str::uuid(),
                 'tenant_id'     => $bizTenantId,
                 'plan_name'     => 'Business Runner Pro',
                 'billing_cycle' => 'monthly',

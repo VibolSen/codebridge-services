@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\TransferController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductExportController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CouponController;
@@ -23,6 +24,7 @@ Route::prefix('v1')->group(function () {
 
     // Public / Read-Only Catalog Endpoints
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/export', [ProductExportController::class, 'export']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
     Route::get('/barcodes/{code}', [ProductController::class, 'showByBarcode']);
     Route::get('/categories', [CategoryController::class, 'index']);

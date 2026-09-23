@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Exception;
 
 class CustomerLoyaltyController extends Controller
@@ -49,9 +48,7 @@ class CustomerLoyaltyController extends Controller
             ]);
 
             // Append ledger entry
-            $ledgerId = (string) Str::uuid();
-            DB::table('customer_credit_ledgers')->insert([
-                'id' => $ledgerId,
+            $ledgerId = DB::table('customer_credit_ledgers')->insertGetId([
                 'customer_id' => $id,
                 'amount_change' => $amountChange,
                 'entry_type' => $validated['entry_type'],
@@ -150,7 +147,6 @@ class CustomerLoyaltyController extends Controller
             ]);
 
             DB::table('customer_credit_ledgers')->insert([
-                'id' => (string) Str::uuid(),
                 'customer_id' => $id,
                 'amount_change' => $creditToAdd,
                 'entry_type' => 'points_conversion',

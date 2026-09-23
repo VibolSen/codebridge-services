@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TransferController extends Controller
 {
@@ -138,13 +137,11 @@ class TransferController extends Controller
         ]);
 
         $userId = $request->user() ? $request->user()->id : 1;
-        $transferId = (string) Str::uuid();
         $transferNumber = 'TRF-' . date('Ymd') . '-' . rand(1000, 9999);
 
-        DB::transaction(function () use ($validated, $tenantId, $userId, $transferId, $transferNumber) {
+        $transferId = DB::transaction(function () use ($validated, $tenantId, $userId, $transferNumber) {
             // Create stock transfer record
-            DB::table('stock_transfers')->insert([
-                'id' => $transferId,
+            $tId = DB::table('stock_transfers')->insertGetId([
                 'tenant_id' => $tenantId,
                 'transfer_number' => $transferNumber,
                 'from_outlet_id' => $validated['from_outlet_id'],
@@ -163,8 +160,7 @@ class TransferController extends Controller
 
                 // Insert transfer line
                 DB::table('stock_transfer_lines')->insert([
-                    'id' => (string) Str::uuid(),
-                    'transfer_id' => $transferId,
+                    'transfer_id' => $tId,
                     'product_id' => $productId,
                     'quantity' => $qty,
                     'created_at' => now(),
@@ -183,7 +179,6 @@ class TransferController extends Controller
                         ->decrement('on_hand', $qty);
                 } else {
                     DB::table('inventory_balances')->insert([
-                        'id' => (string) Str::uuid(),
                         'tenant_id' => $tenantId,
                         'outlet_id' => $validated['from_outlet_id'],
                         'product_id' => $productId,
@@ -197,7 +192,6 @@ class TransferController extends Controller
 
                 // Log inventory movement for dispatch
                 DB::table('inventory_movements')->insert([
-                    'id' => (string) Str::uuid(),
                     'tenant_id' => $tenantId,
                     'outlet_id' => $validated['from_outlet_id'],
                     'product_id' => $productId,
@@ -211,6 +205,8 @@ class TransferController extends Controller
                     'updated_at' => now(),
                 ]);
             }
+
+            return $tId;
         });
 
         return response()->json([
@@ -263,7 +259,6 @@ class TransferController extends Controller
                         ->increment('on_hand', $qty);
                 } else {
                     DB::table('inventory_balances')->insert([
-                        'id' => (string) Str::uuid(),
                         'outlet_id' => $transfer->to_outlet_id,
                         'product_id' => $productId,
                         'on_hand' => $qty,
@@ -276,7 +271,6 @@ class TransferController extends Controller
 
                 // Log inventory movement for receipt
                 DB::table('inventory_movements')->insert([
-                    'id' => (string) Str::uuid(),
                     'outlet_id' => $transfer->to_outlet_id,
                     'product_id' => $productId,
                     'user_id' => $userId,

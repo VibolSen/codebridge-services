@@ -14,7 +14,7 @@ return new class extends Migration
         // 1. Tenants table
         if (!Schema::hasTable('tenants')) {
             Schema::create('tenants', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('name');
                 $table->string('slug')->unique();
                 $table->string('company_code')->unique()->nullable();
@@ -39,8 +39,8 @@ return new class extends Migration
         // 2. Tenant Subscriptions table
         if (!Schema::hasTable('tenant_subscriptions')) {
             Schema::create('tenant_subscriptions', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('tenant_id');
+                $table->id();
+                $table->unsignedBigInteger('tenant_id');
                 $table->string('plan_name');
                 $table->enum('billing_cycle', ['monthly', 'quarterly', 'yearly'])->default('monthly');
                 $table->decimal('price', 10, 2)->default(0);
@@ -58,7 +58,7 @@ return new class extends Migration
         // 3. Add tenant_id to users table
         if (Schema::hasTable('users') && !Schema::hasColumn('users', 'tenant_id')) {
             Schema::table('users', function (Blueprint $table) {
-                $table->uuid('tenant_id')->nullable()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable()->after('id');
             });
         }
     }

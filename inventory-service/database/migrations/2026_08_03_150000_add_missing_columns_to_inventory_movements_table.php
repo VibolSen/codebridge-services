@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('inventory_movements', function (Blueprint $table) {
             if (!Schema::hasColumn('inventory_movements', 'user_id')) {
-                $table->uuid('user_id')->nullable()->after('product_id');
+                $table->unsignedBigInteger('user_id')->nullable()->after('product_id');
             }
             if (!Schema::hasColumn('inventory_movements', 'quantity')) {
                 $table->decimal('quantity', 12, 4)->default(0)->after('movement_type');

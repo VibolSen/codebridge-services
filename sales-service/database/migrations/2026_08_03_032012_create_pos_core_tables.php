@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // 1. Outlets & Registers
         Schema::create('outlets', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->string('code')->unique();
             $table->string('address')->nullable();
@@ -23,8 +23,8 @@ return new class extends Migration
         });
 
         Schema::create('registers', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('outlet_id');
+            $table->id();
+            $table->unsignedBigInteger('outlet_id');
             $table->string('name');
             $table->string('code');
             $table->boolean('is_active')->default(true);
@@ -33,16 +33,16 @@ return new class extends Migration
 
         // 2. Categories, Products, Variants & Barcodes
         Schema::create('categories', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->uuid('parent_id')->nullable();
+            $table->unsignedBigInteger('parent_id')->nullable();
             $table->timestamps();
         });
 
         Schema::create('products', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('category_id')->nullable();
+            $table->id();
+            $table->unsignedBigInteger('category_id')->nullable();
             $table->string('name');
             $table->string('sku')->unique();
             $table->string('barcode')->nullable()->unique();
@@ -56,8 +56,8 @@ return new class extends Migration
         });
 
         Schema::create('product_variants', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('product_id');
+            $table->id();
+            $table->unsignedBigInteger('product_id');
             $table->string('name');
             $table->string('sku')->unique();
             $table->string('barcode')->nullable()->unique();
@@ -69,10 +69,10 @@ return new class extends Migration
 
         // 3. Shifts & Cash Drawer Movements
         Schema::create('shifts', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('outlet_id');
-            $table->uuid('register_id');
-            $table->uuid('user_id');
+            $table->id();
+            $table->unsignedBigInteger('outlet_id');
+            $table->unsignedBigInteger('register_id');
+            $table->unsignedBigInteger('user_id');
             $table->dateTime('opened_at');
             $table->dateTime('closed_at')->nullable();
             $table->decimal('opening_float', 12, 2)->default(0);
@@ -85,9 +85,9 @@ return new class extends Migration
         });
 
         Schema::create('cash_drawer_movements', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('shift_id');
-            $table->uuid('user_id');
+            $table->id();
+            $table->unsignedBigInteger('shift_id');
+            $table->unsignedBigInteger('user_id');
             $table->string('type');
             $table->decimal('amount', 12, 2);
             $table->string('reason');
@@ -96,11 +96,11 @@ return new class extends Migration
 
         // 4. Sales & Sale Lines
         Schema::create('sales', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('outlet_id');
-            $table->uuid('register_id');
-            $table->uuid('shift_id')->nullable();
-            $table->uuid('user_id');
+            $table->id();
+            $table->unsignedBigInteger('outlet_id');
+            $table->unsignedBigInteger('register_id');
+            $table->unsignedBigInteger('shift_id')->nullable();
+            $table->unsignedBigInteger('user_id');
             $table->string('receipt_number')->unique();
             $table->string('idempotency_key')->unique();
             $table->decimal('subtotal', 12, 2);
@@ -113,10 +113,10 @@ return new class extends Migration
         });
 
         Schema::create('sale_lines', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('sale_id');
-            $table->uuid('product_id');
-            $table->uuid('variant_id')->nullable();
+            $table->id();
+            $table->unsignedBigInteger('sale_id');
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('variant_id')->nullable();
             $table->string('product_name');
             $table->decimal('unit_price', 12, 2);
             $table->decimal('quantity', 12, 4);
@@ -127,8 +127,8 @@ return new class extends Migration
 
         // 5. Payments, Payment Attempts & Refunds
         Schema::create('payments', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('sale_id');
+            $table->id();
+            $table->unsignedBigInteger('sale_id');
             $table->string('tender_type');
             $table->decimal('amount', 12, 2);
             $table->string('currency', 3)->default('USD');
@@ -138,8 +138,8 @@ return new class extends Migration
         });
 
         Schema::create('payment_attempts', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('payment_id');
+            $table->id();
+            $table->unsignedBigInteger('payment_id');
             $table->string('merchant_reference')->unique();
             $table->string('provider_transaction_id')->nullable();
             $table->decimal('amount', 12, 2);
@@ -150,10 +150,10 @@ return new class extends Migration
         });
 
         Schema::create('refunds', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('sale_id');
-            $table->uuid('payment_id');
-            $table->uuid('user_id');
+            $table->id();
+            $table->unsignedBigInteger('sale_id');
+            $table->unsignedBigInteger('payment_id');
+            $table->unsignedBigInteger('user_id');
             $table->decimal('amount', 12, 2);
             $table->string('reason');
             $table->timestamps();
@@ -161,10 +161,10 @@ return new class extends Migration
 
         // 6. Inventory Balances & Ledger
         Schema::create('inventory_balances', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('outlet_id');
-            $table->uuid('product_id');
-            $table->uuid('variant_id')->nullable();
+            $table->id();
+            $table->unsignedBigInteger('outlet_id');
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('variant_id')->nullable();
             $table->decimal('on_hand', 12, 4)->default(0);
             $table->decimal('reserved', 12, 4)->default(0);
             $table->decimal('available', 12, 4)->default(0);
@@ -172,23 +172,23 @@ return new class extends Migration
         });
 
         Schema::create('inventory_movements', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('outlet_id');
-            $table->uuid('product_id');
-            $table->uuid('variant_id')->nullable();
+            $table->id();
+            $table->unsignedBigInteger('outlet_id');
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('variant_id')->nullable();
             $table->decimal('quantity_change', 12, 4);
             $table->string('movement_type');
             $table->string('reference_type')->nullable();
             $table->string('reference_id')->nullable();
-            $table->uuid('created_by');
+            $table->unsignedBigInteger('created_by');
             $table->timestamps();
         });
 
         // 7. Audit Logs
         Schema::create('audit_logs', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('user_id')->nullable();
-            $table->uuid('outlet_id')->nullable();
+            $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('outlet_id')->nullable();
             $table->string('action');
             $table->string('auditable_type')->nullable();
             $table->string('auditable_id')->nullable();

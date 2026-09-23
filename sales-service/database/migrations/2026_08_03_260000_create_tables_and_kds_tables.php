@@ -10,20 +10,20 @@ return new class extends Migration
     {
         if (!Schema::hasTable('restaurant_tables')) {
             Schema::create('restaurant_tables', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('name'); // Table 01, Table 02, VIP Lounge 1
                 $table->string('zone')->default('Main Floor'); // Main Floor, Patio, VIP Room
                 $table->integer('capacity')->default(4);
                 $table->string('status')->default('vacant'); // vacant, occupied, reserved, bill_requested
-                $table->uuid('active_sale_id')->nullable();
+                $table->unsignedBigInteger('active_sale_id')->nullable();
                 $table->timestamps();
             });
         }
 
         if (!Schema::hasTable('kds_tickets')) {
             Schema::create('kds_tickets', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('sale_id')->nullable();
+                $table->id();
+                $table->unsignedBigInteger('sale_id')->nullable();
                 $table->string('ticket_number');
                 $table->string('order_type')->default('dine_in'); // dine_in, takeaway, delivery
                 $table->string('table_name')->nullable();

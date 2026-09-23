@@ -14,8 +14,8 @@ return new class extends Migration
         // 1. Roles table
         if (!Schema::hasTable('roles')) {
             Schema::create('roles', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('company_id')->nullable();
+                $table->id();
+                $table->unsignedBigInteger('company_id')->nullable();
                 $table->string('name');
                 $table->string('slug');
                 $table->text('description')->nullable();
@@ -29,7 +29,7 @@ return new class extends Migration
         // 2. Permissions table
         if (!Schema::hasTable('permissions')) {
             Schema::create('permissions', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('name')->unique();
                 $table->string('group');
                 $table->text('description')->nullable();
@@ -40,8 +40,8 @@ return new class extends Migration
         // 3. Role Permissions pivot table
         if (!Schema::hasTable('role_permissions')) {
             Schema::create('role_permissions', function (Blueprint $table) {
-                $table->uuid('role_id');
-                $table->uuid('permission_id');
+                $table->unsignedBigInteger('role_id');
+                $table->unsignedBigInteger('permission_id');
                 $table->primary(['role_id', 'permission_id']);
             });
         }
@@ -49,7 +49,7 @@ return new class extends Migration
         // 4. Add role_id to users table
         if (Schema::hasTable('users') && !Schema::hasColumn('users', 'role_id')) {
             Schema::table('users', function (Blueprint $table) {
-                $table->uuid('role_id')->nullable()->after('role');
+                $table->unsignedBigInteger('role_id')->nullable()->after('role');
             });
         }
     }

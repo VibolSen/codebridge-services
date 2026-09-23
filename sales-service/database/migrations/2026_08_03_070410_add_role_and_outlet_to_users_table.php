@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('role')->default('cashier')->after('email');
-            $table->uuid('outlet_id')->nullable()->after('role');
+            $table->unsignedBigInteger('outlet_id')->nullable()->after('role');
             $table->boolean('is_active')->default(true)->after('outlet_id');
         });
     }

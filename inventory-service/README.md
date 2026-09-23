@@ -8,7 +8,7 @@ The **Inventory Microservice** handles stock level tracking, append-only stock m
 
 - **Port**: `8003`
 - **Database**: `inventory_db` (MySQL 8.0)
-- **Primary Key Standard**: `uuidv4` (`char(36)`)
+- **Primary Key Standard**: Auto-increment BigInt (`id`, `unsignedBigInteger`)
 - **API Gateway Prefix**: `/api/v1/inventory`
 
 ---

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('gift_cards')) {
             Schema::create('gift_cards', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('card_code')->unique();
                 $table->string('customer')->default('Walk-in Customer');
                 $table->decimal('balance', 12, 2)->default(0);

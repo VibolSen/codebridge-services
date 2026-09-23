@@ -8,7 +8,7 @@ The **Auth Microservice** is responsible for user identity management, Laravel S
 
 - **Port**: `8001`
 - **Database**: `auth_db` (MySQL 8.0)
-- **Primary Key Standard**: `uuidv4` (`char(36)`)
+- **Primary Key Standard**: Auto-increment BigInt (`id`, `unsignedBigInteger`)
 - **API Gateway Prefix**: `/api/v1/auth`, `/api/v1/me`, `/api/v1/users`, `/api/v1/roles`
 
 ---

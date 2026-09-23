@@ -67,11 +67,9 @@ class OutletController extends Controller
             'receipt_footer' => 'nullable|string|max:255',
         ]);
 
-        $id = (string) Str::uuid();
         $tenantId = $user ? $user->tenant_id : null;
 
-        DB::table('outlets')->insert([
-            'id' => $id,
+        $id = DB::table('outlets')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'code' => $validated['code'],

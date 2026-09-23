@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Exception;
 
 class OnlineOrderController extends Controller
@@ -22,44 +21,27 @@ class OnlineOrderController extends Controller
             'delivery_address' => 'nullable|string|max:500',
             'payment_method' => 'nullable|string|in:khqr,cash,store_credit',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|string',
+            'items.*.product_id' => 'required',
             'items.*.product_name' => 'required|string',
             'items.*.quantity' => 'required|numeric|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
         return DB::transaction(function () use ($validated) {
-            $orderId = (string) Str::uuid();
             $orderNumber = 'ORD-ONLINE-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
 
             $subtotal = 0;
-            $linesToInsert = [];
-
             foreach ($validated['items'] as $item) {
                 $qty = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
-                $lineSubtotal = $qty * $unitPrice;
-                $subtotal += $lineSubtotal;
-
-                $linesToInsert[] = [
-                    'id' => (string) Str::uuid(),
-                    'online_order_id' => $orderId,
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['product_name'],
-                    'quantity' => $qty,
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $lineSubtotal,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                $subtotal += ($qty * $unitPrice);
             }
 
             $deliveryFee = $validated['delivery_type'] === 'delivery' ? 1.50 : 0.00;
             $taxAmount = round($subtotal * 0.10, 2);
             $grandTotal = $subtotal + $taxAmount + $deliveryFee;
 
-            DB::table('online_orders')->insert([
-                'id' => $orderId,
+            $orderId = DB::table('online_orders')->insertGetId([
                 'order_number' => $orderNumber,
                 'customer_name' => $validated['customer_name'],
                 'customer_phone' => $validated['customer_phone'],
@@ -77,8 +59,21 @@ class OnlineOrderController extends Controller
                 'updated_at' => now(),
             ]);
 
-            foreach ($linesToInsert as $l) {
-                DB::table('online_order_lines')->insert($l);
+            foreach ($validated['items'] as $item) {
+                $qty = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+                $lineSubtotal = $qty * $unitPrice;
+
+                DB::table('online_order_lines')->insert([
+                    'online_order_id' => $orderId,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $item['product_name'],
+                    'quantity' => $qty,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $lineSubtotal,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
 
             return response()->json([

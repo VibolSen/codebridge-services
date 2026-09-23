@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
@@ -54,11 +53,9 @@ class FinanceController extends Controller
             'expense_ref' => 'nullable|string|max:100',
         ]);
 
-        $id = (string) Str::uuid();
         $ref = $validated['expense_ref'] ?? ('EXP-' . strtoupper(substr(uniqid(), -6)));
 
-        DB::table('expenses')->insert([
-            'id' => $id,
+        $id = DB::table('expenses')->insertGetId([
             'tenant_id' => $tenantId,
             'expense_ref' => $ref,
             'category' => $validated['category'],
@@ -115,11 +112,9 @@ class FinanceController extends Controller
             'income_ref' => 'nullable|string|max:100',
         ]);
 
-        $id = (string) Str::uuid();
         $ref = $validated['income_ref'] ?? ('INC-' . strtoupper(substr(uniqid(), -6)));
 
-        DB::table('incomes')->insert([
-            'id' => $id,
+        $id = DB::table('incomes')->insertGetId([
             'tenant_id' => $tenantId,
             'income_ref' => $ref,
             'source' => $validated['source'],
@@ -174,10 +169,7 @@ class FinanceController extends Controller
             'status' => 'nullable|string|in:connected,active,pending,disconnected',
         ]);
 
-        $id = (string) Str::uuid();
-
-        DB::table('bank_accounts')->insert([
-            'id' => $id,
+        $id = DB::table('bank_accounts')->insertGetId([
             'tenant_id' => $tenantId,
             'bank_name' => $validated['bank_name'],
             'account_name' => $validated['account_name'],

@@ -40,10 +40,8 @@ class GiftCardController extends Controller
         ]);
 
         $code = $validated['card_code'] ?? ('GC-' . rand(1000, 9999) . '-' . rand(1000, 9999));
-        $id = (string) Str::uuid();
 
-        DB::table('gift_cards')->insert([
-            'id' => $id,
+        $id = DB::table('gift_cards')->insertGetId([
             'tenant_id' => $tenantId,
             'card_code' => $code,
             'customer' => $validated['customer'] ?? 'Walk-in Customer',

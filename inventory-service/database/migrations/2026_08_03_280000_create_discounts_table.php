@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('discounts')) {
             Schema::create('discounts', function (Blueprint $table) {
-                $table->uuid('id')->primary();
+                $table->id();
                 $table->string('name');
                 $table->string('discount_pct');
                 $table->string('applies_to')->default('All Products');

@@ -13,9 +13,9 @@ return new class extends Migration
     {
         if (!Schema::hasTable('api_keys')) {
             Schema::create('api_keys', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->uuid('tenant_id')->nullable();
-                $table->uuid('user_id')->nullable();
+                $table->id();
+                $table->unsignedBigInteger('tenant_id')->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
                 $table->string('name');
                 $table->string('key_prefix', 16);
                 $table->string('secret_hash', 64);

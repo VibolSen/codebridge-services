@@ -200,7 +200,6 @@ class InventoryController extends Controller
                         ->increment('on_hand', $qty);
                 } else {
                     DB::table('inventory_balances')->insert([
-                        'id' => (string) Str::uuid(),
                         'tenant_id' => $tenantId,
                         'outlet_id' => $outletId,
                         'product_id' => $productId,
@@ -213,7 +212,6 @@ class InventoryController extends Controller
 
                 // Append to movements ledger
                 DB::table('inventory_movements')->insert([
-                    'id' => (string) Str::uuid(),
                     'tenant_id' => $tenantId,
                     'outlet_id' => $outletId,
                     'product_id' => $productId,
@@ -269,7 +267,6 @@ class InventoryController extends Controller
                 }
             } else {
                 DB::table('inventory_balances')->insert([
-                    'id' => (string) Str::uuid(),
                     'tenant_id' => $tenantId,
                     'outlet_id' => $outletId,
                     'product_id' => $productId,
@@ -282,7 +279,6 @@ class InventoryController extends Controller
 
             // Append to movements ledger
             DB::table('inventory_movements')->insert([
-                'id' => (string) Str::uuid(),
                 'tenant_id' => $tenantId,
                 'outlet_id' => $outletId,
                 'product_id' => $productId,

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CouponController extends Controller
 {
@@ -82,7 +81,6 @@ class CouponController extends Controller
         if (DB::table('coupons')->count() === 0) {
             DB::table('coupons')->insert([
                 [
-                    'id' => (string) Str::uuid(),
                     'code' => 'WELCOME10',
                     'discount_type' => 'percentage',
                     'discount_value' => 10.00,
@@ -93,7 +91,6 @@ class CouponController extends Controller
                     'updated_at' => now(),
                 ],
                 [
-                    'id' => (string) Str::uuid(),
                     'code' => 'FRESH5',
                     'discount_type' => 'fixed',
                     'discount_value' => 5.00,
