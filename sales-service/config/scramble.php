@@ -5,8 +5,8 @@ return [
         'title' => 'CodeBridges Sales, Shifts & Payments Service API',
     ],
     'servers' => [
-        'Cloud Production' => 'https://pos-services-ph15.onrender.com',
-        'Local Gateway' => 'http://localhost:8080',
+        'Cloud Production' => 'https://pos-services-ph15.onrender.com/api',
+        'Local Gateway' => 'http://localhost:8080/api',
     ],
     'path' => 'docs/api',
     'middleware' => [
