@@ -116,6 +116,19 @@
   </main>
 
   <script>
+    // Automatically upgrade any insecure http:// calls to current origin/https to prevent Mixed Content blocking
+    if (window.location.protocol === 'https:') {
+      const originalFetch = window.fetch;
+      window.fetch = function(resource, init) {
+        if (typeof resource === 'string' && resource.startsWith('http://' + window.location.host)) {
+          resource = resource.replace('http://', 'https://');
+        } else if (resource instanceof Request && resource.url.startsWith('http://' + window.location.host)) {
+          resource = new Request(resource.url.replace('http://', 'https://'), resource);
+        }
+        return originalFetch.call(this, resource, init);
+      };
+    }
+
     function switchService(specUrl) {
       localStorage.setItem('codebridges_selected_doc_spec', specUrl);
       const wrapper = document.getElementById('docsWrapper');

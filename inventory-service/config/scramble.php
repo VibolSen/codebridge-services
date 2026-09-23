@@ -4,6 +4,10 @@ return [
     'ui' => [
         'title' => 'CodeBridges Inventory & Catalog Service API',
     ],
+    'servers' => [
+        'Cloud Production' => 'https://pos-services-ph15.onrender.com',
+        'Local Gateway' => 'http://localhost:8080',
+    ],
     'path' => 'docs/api',
     'middleware' => [
         'web',

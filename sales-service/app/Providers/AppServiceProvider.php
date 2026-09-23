@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Dedoc\Scramble\Scramble;
 
 use Laravel\Sanctum\Sanctum;
@@ -18,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (app()->environment('production') || env('APP_ENV') === 'production') {
+            URL::forceScheme('https');
+        }
+
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         if (class_exists(Scramble::class)) {

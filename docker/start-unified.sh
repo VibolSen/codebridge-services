@@ -31,7 +31,7 @@ for svc in "${SERVICES[@]}"; do
 APP_NAME=POS-${svc}
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=http://localhost
+APP_URL=${APP_URL:-https://pos-services-ph15.onrender.com}
 APP_KEY=
 
 DB_CONNECTION=mysql
